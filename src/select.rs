@@ -1,5 +1,11 @@
+use std::fmt::Write;
+
 use crate::conditional::{BuildCondition, Condition};
-use crate::Value;
+use crate::join_table::{JoinTable, JoinTableImpl};
+use crate::limit_clause::LimitClause;
+use crate::ordering::{OrderByEntry, Ordering};
+use crate::select_column::{SelectColumn, SelectColumnImpl};
+use crate::{DBImpl, Value};
 
 /**
 Trait representing a select builder.
@@ -8,12 +14,7 @@ pub trait Select<'until_build, 'post_query> {
     /**
     Set a limit to the resulting rows.
      */
-    fn limit(self, limit: u64) -> Self;
-
-    /**
-    Set the offset to apply to the resulting rows.
-     */
-    fn offset(self, offset: u64) -> Self;
+    fn limit_clause(self, limit: LimitClause) -> Self;
 
     /**
     Only retrieve distinct rows.
@@ -36,17 +37,21 @@ Representation of the data of a SELECT operation in SQL.
  */
 #[derive(Debug)]
 pub struct SelectData<'until_build, 'post_query> {
-    pub(crate) resulting_columns: &'until_build [&'until_build str],
+    pub(crate) resulting_columns: &'until_build [SelectColumnImpl<'until_build>],
     pub(crate) limit: Option<u64>,
     pub(crate) offset: Option<u64>,
     pub(crate) from_clause: &'until_build str,
     pub(crate) where_clause: Option<&'until_build Condition<'post_query>>,
     pub(crate) distinct: bool,
     pub(crate) lookup: Vec<Value<'post_query>>,
+    pub(crate) join_tables: &'until_build [JoinTableImpl<'until_build, 'post_query>],
+    pub(crate) order_by_clause: &'until_build [OrderByEntry<'until_build>],
 }
 
 /**
-Implementation of the [Select] trait for the different implementations
+Implementation of the [Select] trait for the different implementations.
+
+Should only be constructed via [DBImpl::select]
  */
 #[derive(Debug)]
 pub enum SelectImpl<'until_build, 'post_query> {
@@ -70,26 +75,23 @@ pub enum SelectImpl<'until_build, 'post_query> {
 impl<'until_build, 'post_build> Select<'until_build, 'post_build>
     for SelectImpl<'until_build, 'post_build>
 {
-    fn limit(mut self, limit: u64) -> Self {
+    fn limit_clause(mut self, limit: LimitClause) -> Self {
         match self {
             #[cfg(feature = "sqlite")]
-            SelectImpl::SQLite(ref mut d) => d.limit = Some(limit),
+            SelectImpl::SQLite(ref mut d) => {
+                d.limit = Some(limit.limit);
+                d.offset = limit.offset;
+            }
             #[cfg(feature = "mysql")]
-            SelectImpl::MySQL(ref mut d) => d.limit = Some(limit),
+            SelectImpl::MySQL(ref mut d) => {
+                d.limit = Some(limit.limit);
+                d.offset = limit.offset;
+            }
             #[cfg(feature = "postgres")]
-            SelectImpl::Postgres(ref mut d) => d.limit = Some(limit),
-        };
-        self
-    }
-
-    fn offset(mut self, offset: u64) -> Self {
-        match self {
-            #[cfg(feature = "sqlite")]
-            SelectImpl::SQLite(ref mut d) => d.offset = Some(offset),
-            #[cfg(feature = "mysql")]
-            SelectImpl::MySQL(ref mut d) => d.offset = Some(offset),
-            #[cfg(feature = "postgres")]
-            SelectImpl::Postgres(ref mut d) => d.offset = Some(offset),
+            SelectImpl::Postgres(ref mut d) => {
+                d.limit = Some(limit.limit);
+                d.offset = limit.offset;
+            }
         };
         self
     }
@@ -121,59 +123,185 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
     fn build(self) -> (String, Vec<Value<'post_build>>) {
         match self {
             #[cfg(feature = "sqlite")]
-            SelectImpl::SQLite(mut d) => (
-                format!(
-                    "SELECT {} {} FROM {} {};",
-                    if d.distinct { "DISTINCT" } else { "" },
-                    d.resulting_columns.join(", "),
-                    d.from_clause,
-                    match d.where_clause {
-                        None => {
-                            "".to_string()
+            SelectImpl::SQLite(mut d) => {
+                let mut s = format!("SELECT{} ", if d.distinct { " DISTINCT" } else { "" });
+
+                let column_len = d.resulting_columns.len();
+                for (idx, column) in d.resulting_columns.iter().enumerate() {
+                    column.build(&mut s);
+
+                    if idx != column_len - 1 {
+                        write!(s, ", ").unwrap();
+                    }
+                }
+
+                write!(s, " FROM {}", d.from_clause).unwrap();
+
+                for x in d.join_tables {
+                    write!(s, " ").unwrap();
+                    x.build(&mut s, &mut d.lookup);
+                }
+
+                if let Some(c) = d.where_clause {
+                    write!(s, " WHERE {}", c.build(DBImpl::SQLite, &mut d.lookup)).unwrap()
+                };
+
+                if !d.order_by_clause.is_empty() {
+                    write!(s, " ORDER BY ").unwrap();
+
+                    let order_by_len = d.order_by_clause.len();
+                    for (idx, entry) in d.order_by_clause.iter().enumerate() {
+                        if let Some(table_name) = entry.table_name {
+                            write!(s, "{}.", table_name).unwrap();
+                        };
+                        write!(
+                            s,
+                            "{}{}",
+                            entry.column_name,
+                            match entry.ordering {
+                                Ordering::Asc => "",
+                                Ordering::Desc => " DESC",
+                            }
+                        )
+                        .unwrap();
+
+                        if idx != order_by_len - 1 {
+                            write!(s, ", ").unwrap();
                         }
-                        Some(condition) => {
-                            format!("WHERE {}", condition.build(&mut d.lookup))
-                        }
-                    },
-                ),
-                d.lookup,
-            ),
+                    }
+                };
+
+                if let Some(limit) = d.limit {
+                    write!(s, " LIMIT {}", limit).unwrap();
+                    if let Some(offset) = d.offset {
+                        write!(s, " OFFSET {}", offset).unwrap();
+                    }
+                };
+
+                write!(s, ";").unwrap();
+
+                (s, d.lookup)
+            }
             #[cfg(feature = "mysql")]
-            SelectImpl::MySQL(mut d) => (
-                format!(
-                    "SELECT {} {} FROM {} {};",
-                    if d.distinct { "DISTINCT" } else { "" },
-                    d.resulting_columns.join(", "),
-                    d.from_clause,
-                    match d.where_clause {
-                        None => {
-                            "".to_string()
+            SelectImpl::MySQL(mut d) => {
+                let mut s = format!("SELECT{} ", if d.distinct { " DISTINCT" } else { "" });
+
+                let column_len = d.resulting_columns.len();
+                for (idx, column) in d.resulting_columns.iter().enumerate() {
+                    column.build(&mut s);
+
+                    if idx != column_len - 1 {
+                        write!(s, ", ").unwrap();
+                    }
+                }
+
+                write!(s, " FROM {}", d.from_clause).unwrap();
+
+                for x in d.join_tables {
+                    write!(s, " ").unwrap();
+                    x.build(&mut s, &mut d.lookup);
+                }
+
+                if let Some(c) = d.where_clause {
+                    write!(s, " WHERE {}", c.build(DBImpl::MySQL, &mut d.lookup)).unwrap()
+                };
+
+                if !d.order_by_clause.is_empty() {
+                    write!(s, " ORDER BY ").unwrap();
+
+                    let order_by_len = d.order_by_clause.len();
+                    for (idx, entry) in d.order_by_clause.iter().enumerate() {
+                        if let Some(table_name) = entry.table_name {
+                            write!(s, "{}.", table_name).unwrap();
+                        };
+                        write!(
+                            s,
+                            "{}{}",
+                            entry.column_name,
+                            match entry.ordering {
+                                Ordering::Asc => "",
+                                Ordering::Desc => " DESC",
+                            }
+                        )
+                        .unwrap();
+
+                        if idx != order_by_len - 1 {
+                            write!(s, ", ").unwrap();
                         }
-                        Some(condition) => {
-                            format!("WHERE {}", condition.build(&mut d.lookup))
-                        }
-                    },
-                ),
-                d.lookup,
-            ),
+                    }
+                };
+
+                if let Some(limit) = d.limit {
+                    write!(s, " LIMIT {}", limit).unwrap();
+                    if let Some(offset) = d.offset {
+                        write!(s, " OFFSET {}", offset).unwrap();
+                    }
+                };
+
+                write!(s, ";").unwrap();
+
+                (s, d.lookup)
+            }
             #[cfg(feature = "postgres")]
-            SelectImpl::Postgres(mut d) => (
-                format!(
-                    "SELECT {} {} FROM {} {};",
-                    if d.distinct { "DISTINCT" } else { "" },
-                    d.resulting_columns.join(", "),
-                    format!("\"{}\"", d.from_clause),
-                    match d.where_clause {
-                        None => {
-                            "".to_string()
+            SelectImpl::Postgres(mut d) => {
+                let mut s = format!("SELECT{} ", if d.distinct { " DISTINCT" } else { "" });
+
+                let column_len = d.resulting_columns.len();
+                for (idx, column) in d.resulting_columns.iter().enumerate() {
+                    column.build(&mut s);
+
+                    if idx != column_len - 1 {
+                        write!(s, ", ").unwrap();
+                    }
+                }
+
+                write!(s, " FROM \"{}\"", d.from_clause).unwrap();
+
+                for x in d.join_tables {
+                    write!(s, " ").unwrap();
+                    x.build(&mut s, &mut d.lookup);
+                }
+
+                if let Some(c) = d.where_clause {
+                    write!(s, " WHERE {}", c.build(DBImpl::Postgres, &mut d.lookup)).unwrap()
+                };
+
+                if !d.order_by_clause.is_empty() {
+                    write!(s, " ORDER BY ").unwrap();
+
+                    let order_by_len = d.order_by_clause.len();
+                    for (idx, entry) in d.order_by_clause.iter().enumerate() {
+                        if let Some(table_name) = entry.table_name {
+                            write!(s, "\"{}\".", table_name).unwrap();
+                        };
+                        write!(
+                            s,
+                            "\"{}\"{}",
+                            entry.column_name,
+                            match entry.ordering {
+                                Ordering::Asc => "",
+                                Ordering::Desc => " DESC",
+                            }
+                        )
+                        .unwrap();
+
+                        if idx != order_by_len - 1 {
+                            write!(s, ", ").unwrap();
                         }
-                        Some(condition) => {
-                            format!("WHERE {}", condition.build(&mut d.lookup))
-                        }
-                    },
-                ),
-                d.lookup,
-            ),
+                    }
+                };
+
+                if let Some(limit) = d.limit {
+                    write!(s, " LIMIT {}", limit).unwrap();
+                    if let Some(offset) = d.offset {
+                        write!(s, " OFFSET {}", offset).unwrap();
+                    }
+                };
+
+                write!(s, ";").unwrap();
+
+                (s, d.lookup)
+            }
         }
     }
 }

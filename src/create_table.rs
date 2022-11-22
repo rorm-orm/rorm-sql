@@ -35,11 +35,14 @@ pub struct CreateTableData<'until_build, 'post_build> {
     pub(crate) columns: Vec<CreateColumnImpl<'until_build, 'post_build>>,
     pub(crate) if_not_exists: bool,
     pub(crate) lookup: Vec<Value<'post_build>>,
+    pub(crate) pre_statements: Vec<(String, Vec<Value<'post_build>>)>,
     pub(crate) statements: Vec<(String, Vec<Value<'post_build>>)>,
 }
 
 /**
 The implementation of the [CreateTable] trait for different database dialects.
+
+This should only be constructed via [crate::DBImpl::create_table].
 */
 pub enum CreateTableImpl<'until_build, 'post_build> {
     /**
@@ -180,11 +183,13 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
                 for (idx, mut x) in d.columns.into_iter().enumerate() {
                     #[cfg(any(feature = "sqlite", feature = "mysql"))]
                     if let CreateColumnImpl::Postgres(ref mut cci) = x {
+                        cci.pre_statements = Some(&mut d.pre_statements);
                         cci.statements = Some(&mut d.statements);
                     }
                     #[cfg(not(any(feature = "sqlite", feature = "mysql")))]
                     {
                         let CreateColumnImpl::Postgres(ref mut cci) = x;
+                        cci.pre_statements = Some(&mut d.pre_statements);
                         cci.statements = Some(&mut d.statements);
                     }
 
@@ -197,7 +202,8 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
 
                 write!(s, "); ").unwrap();
 
-                let mut statements = vec![(s, d.lookup)];
+                let mut statements = d.pre_statements;
+                statements.push((s, d.lookup));
                 statements.extend(d.statements);
 
                 Ok(statements)

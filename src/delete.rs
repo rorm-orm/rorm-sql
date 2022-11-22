@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
 use crate::conditional::{BuildCondition, Condition};
-use crate::Value;
+use crate::{DBImpl, Value};
 
 /**
 Trait representing a delete builder.
@@ -26,7 +26,7 @@ pub trait Delete<'until_build, 'post_query> {
 }
 
 /**
-SQLite representation of the DELETE operation.
+Representation of the data of a DELETE operation.
 */
 #[derive(Debug)]
 pub struct DeleteData<'until_build, 'post_query> {
@@ -37,6 +37,8 @@ pub struct DeleteData<'until_build, 'post_query> {
 
 /**
 Implementation of the [Delete] trait for the different implementations
+
+Should only be constructed via [DBImpl::delete].
 */
 #[derive(Debug)]
 pub enum DeleteImpl<'until_build, 'post_query> {
@@ -79,7 +81,12 @@ impl<'until_build, 'post_query> Delete<'until_build, 'post_query>
                 let mut s = format!("DELETE FROM {} ", d.model);
 
                 if d.where_clause.is_some() {
-                    write!(s, "WHERE {} ", d.where_clause.unwrap().build(&mut d.lookup)).unwrap();
+                    write!(
+                        s,
+                        "WHERE {} ",
+                        d.where_clause.unwrap().build(DBImpl::SQLite, &mut d.lookup)
+                    )
+                    .unwrap();
                 }
 
                 write!(s, ";").unwrap();
@@ -90,7 +97,12 @@ impl<'until_build, 'post_query> Delete<'until_build, 'post_query>
                 let mut s = format!("DELETE FROM {} ", d.model);
 
                 if d.where_clause.is_some() {
-                    write!(s, "WHERE {} ", d.where_clause.unwrap().build(&mut d.lookup)).unwrap();
+                    write!(
+                        s,
+                        "WHERE {} ",
+                        d.where_clause.unwrap().build(DBImpl::MySQL, &mut d.lookup)
+                    )
+                    .unwrap();
                 }
 
                 write!(s, ";").unwrap();
@@ -101,7 +113,14 @@ impl<'until_build, 'post_query> Delete<'until_build, 'post_query>
                 let mut s = format!("DELETE FROM \"{}\" ", d.model);
 
                 if d.where_clause.is_some() {
-                    write!(s, "WHERE {} ", d.where_clause.unwrap().build(&mut d.lookup)).unwrap();
+                    write!(
+                        s,
+                        "WHERE {} ",
+                        d.where_clause
+                            .unwrap()
+                            .build(DBImpl::Postgres, &mut d.lookup)
+                    )
+                    .unwrap();
                 }
 
                 write!(s, ";").unwrap();

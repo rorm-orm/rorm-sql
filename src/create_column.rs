@@ -75,11 +75,14 @@ pub struct CreateColumnPostgresData<'until_build, 'post_build> {
     pub(crate) table_name: &'until_build str,
     pub(crate) data_type: DbType,
     pub(crate) annotations: Vec<SQLAnnotation<'post_build>>,
+    pub(crate) pre_statements: Option<&'until_build mut Vec<(String, Vec<Value<'post_build>>)>>,
     pub(crate) statements: Option<&'until_build mut Vec<(String, Vec<Value<'post_build>>)>>,
 }
 
 /**
 Representation of the different implementations of the [CreateColumn] trait.
+
+Should only be constructed via [crate::DBImpl::create_column].
 */
 #[derive(Debug)]
 pub enum CreateColumnImpl<'until_build, 'post_build> {
@@ -134,8 +137,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         trigger_annotation_to_trigger_sqlite(
                             x.annotation,
                             &d.data_type,
-                            &d.table_name,
-                            &d.name,
+                            d.table_name,
+                            d.name,
                             s,
                         );
                     }
@@ -173,6 +176,12 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         Annotation::NotNull => write!(s, "NOT NULL").unwrap(),
                         Annotation::PrimaryKey => write!(s, "PRIMARY KEY").unwrap(),
                         Annotation::Unique => write!(s, "UNIQUE").unwrap(),
+                        Annotation::ForeignKey(fk) => write!(
+                            s,
+                            "REFERENCES {} ({}) ON DELETE {} ON UPDATE {}",
+                            fk.table_name, fk.column_name, fk.on_delete, fk.on_update
+                        )
+                        .unwrap(),
                         _ => {}
                     }
 
@@ -192,8 +201,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         let a_opt = d
                             .annotations
                             .iter()
-                            .filter(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)))
-                            .next();
+                            .find(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)));
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
@@ -213,8 +221,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         let a_opt = d
                             .annotations
                             .iter()
-                            .filter(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)))
-                            .next();
+                            .find(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)));
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
@@ -242,20 +249,16 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                     DbType::Timestamp => write!(s, "TIMESTAMP ").unwrap(),
                     DbType::Time => write!(s, "TIME ").unwrap(),
                     DbType::Choices => {
-                        let a_opt = d
-                            .annotations
-                            .iter()
-                            .filter(|x| {
-                                x.annotation
-                                    .eq_shallow(&Annotation::Choices(Default::default()))
-                            })
-                            .next();
+                        let a_opt = d.annotations.iter().find(|x| {
+                            x.annotation
+                                .eq_shallow(&Annotation::Choices(Default::default()))
+                        });
 
                         if let Some(a) = a_opt {
                             if let Annotation::Choices(values) = a.annotation {
                                 write!(
                                     s,
-                                    "VARCHAR({}) ",
+                                    "ENUM({}) ",
                                     values
                                         .iter()
                                         .map(|x| {
@@ -330,6 +333,12 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         Annotation::NotNull => write!(s, "NOT NULL").unwrap(),
                         Annotation::PrimaryKey => write!(s, "PRIMARY KEY").unwrap(),
                         Annotation::Unique => write!(s, "UNIQUE").unwrap(),
+                        Annotation::ForeignKey(fk) => write!(
+                            s,
+                            "REFERENCES {}({}) ON DELETE {} ON UPDATE {}",
+                            fk.table_name, fk.column_name, fk.on_delete, fk.on_update
+                        )
+                        .unwrap(),
                         _ => {}
                     }
 
@@ -342,15 +351,14 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
             }
             #[cfg(feature = "postgres")]
             CreateColumnImpl::Postgres(mut d) => {
-                write!(s, "{} ", d.name).unwrap();
+                write!(s, "\"{}\" ", d.name).unwrap();
 
                 match d.data_type {
-                    DbType::VarChar | DbType::Choices => {
+                    DbType::VarChar => {
                         let a_opt = d
                             .annotations
                             .iter()
-                            .filter(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)))
-                            .next();
+                            .find(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)));
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
@@ -364,6 +372,41 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         } else {
                             return Err(Error::SQLBuildError(
                                 "character varying must have a max_length annotation".to_string(),
+                            ));
+                        }
+                    }
+                    DbType::Choices => {
+                        let a_opt = d.annotations.iter().find(|x| {
+                            x.annotation
+                                .eq_shallow(&Annotation::Choices(Default::default()))
+                        });
+
+                        if let Some(a) = a_opt {
+                            if let Annotation::Choices(values) = a.annotation {
+                                if let Some(stmts) = d.pre_statements {
+                                    stmts.push((
+                                        format!(
+                                            "CREATE TYPE _{}_{} AS ENUM({});",
+                                            d.table_name,
+                                            d.name,
+                                            values
+                                                .iter()
+                                                .map(|x| { postgres::fmt(x) })
+                                                .collect::<Vec<String>>()
+                                                .join(", ")
+                                        ),
+                                        vec![],
+                                    ));
+                                };
+                                write!(s, "_{}_{} ", d.table_name, d.name,).unwrap();
+                            } else {
+                                return Err(Error::SQLBuildError(
+                                    "VARCHAR must have a MaxLength annotation".to_string(),
+                                ));
+                            }
+                        } else {
+                            return Err(Error::SQLBuildError(
+                                "VARCHAR must have a MaxLength annotation".to_string(),
                             ));
                         }
                     }
@@ -411,8 +454,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                     if let Some(ref mut s) = d.statements {
                         trigger_annotation_to_trigger_postgres(
                             x.annotation,
-                            &d.table_name,
-                            &d.name,
+                            d.table_name,
+                            d.name,
                             s,
                         );
                     }
@@ -440,15 +483,21 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                             DefaultValue::Float(f) => write!(s, "DEFAULT {}", f).unwrap(),
                             DefaultValue::Boolean(b) => {
                                 if *b {
-                                    write!(s, "DEFAULT 1").unwrap();
+                                    write!(s, "DEFAULT true").unwrap();
                                 } else {
-                                    write!(s, "DEFAULT 0").unwrap();
+                                    write!(s, "DEFAULT false").unwrap();
                                 }
                             }
                         },
                         Annotation::NotNull => write!(s, "NOT NULL").unwrap(),
                         Annotation::PrimaryKey => write!(s, "PRIMARY KEY").unwrap(),
                         Annotation::Unique => write!(s, "UNIQUE").unwrap(),
+                        Annotation::ForeignKey(fk) => write!(
+                            s,
+                            "REFERENCES \"{}\"({}) ON DELETE {} ON UPDATE {}",
+                            fk.table_name, fk.column_name, fk.on_delete, fk.on_update
+                        )
+                        .unwrap(),
                         _ => {}
                     };
 

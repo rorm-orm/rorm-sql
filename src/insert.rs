@@ -38,7 +38,9 @@ pub struct InsertData<'until_build, 'post_build> {
 }
 
 /**
-Implementation of the [Insert] trait for the different implementations
+Implementation of the [Insert] trait for the different implementations.
+
+Should only be constructed via [DBImpl::insert].
  */
 #[derive(Debug)]
 pub enum InsertImpl<'until_build, 'post_build> {
@@ -118,14 +120,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             }
             #[cfg(feature = "mysql")]
             InsertImpl::MySQL(mut d) => {
-                let mut s = format!(
-                    "INSERT {}INTO {} (",
-                    match d.on_conflict {
-                        OnConflict::ABORT => "OR ABORT ",
-                        OnConflict::ROLLBACK => "OR ROLLBACK ",
-                    },
-                    d.into_clause,
-                );
+                let mut s = format!("INSERT INTO {} (", d.into_clause,);
                 for (idx, x) in d.columns.iter().enumerate() {
                     write!(s, "{}", x).unwrap();
                     if idx != d.columns.len() - 1 {

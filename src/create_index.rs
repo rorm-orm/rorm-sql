@@ -52,6 +52,8 @@ pub struct CreateIndexData<'until_build> {
 
 /**
 Implementation of database specific implementations of the [CreateIndex] trait.
+
+Should only be constructed via [crate::DBImpl::create_index].
 */
 pub enum CreateIndexImpl<'until_build> {
     /**
@@ -124,7 +126,7 @@ impl<'until_build> CreateIndex<'until_build> for CreateIndexImpl<'until_build> {
         match self {
             #[cfg(feature = "sqlite")]
             CreateIndexImpl::Sqlite(d) => {
-                if d.columns.len() == 0 {
+                if d.columns.is_empty() {
                     return Err(Error::SQLBuildError(format!(
                         "Couldn't create index on {}: Missing column(s) to create the index on",
                         d.table_name
@@ -147,7 +149,7 @@ impl<'until_build> CreateIndex<'until_build> for CreateIndexImpl<'until_build> {
             }
             #[cfg(feature = "mysql")]
             CreateIndexImpl::MySQL(d) => {
-                if d.columns.len() == 0 {
+                if d.columns.is_empty() {
                     return Err(Error::SQLBuildError(format!(
                         "Couldn't create index on {}: Missing column(s) to create the index on",
                         d.table_name
@@ -169,7 +171,7 @@ impl<'until_build> CreateIndex<'until_build> for CreateIndexImpl<'until_build> {
             }
             #[cfg(feature = "postgres")]
             CreateIndexImpl::Postgres(d) => {
-                if d.columns.len() == 0 {
+                if d.columns.is_empty() {
                     return Err(Error::SQLBuildError(format!(
                         "Couldn't create index on {}: Missing column(s) to create the index on",
                         d.table_name

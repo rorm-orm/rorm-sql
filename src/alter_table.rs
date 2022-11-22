@@ -57,7 +57,9 @@ pub struct AlterTableData<'until_build, 'post_build> {
 }
 
 /**
-Implementation of the [AlterTable] trait for the different database dialects
+Implementation of the [AlterTable] trait for the different database dialects.
+
+Should only be constructed via [crate::DBImpl::alter_table].
  */
 #[derive(Debug)]
 pub enum AlterTableImpl<'until_build, 'post_build> {
@@ -167,11 +169,11 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
             }
             #[cfg(feature = "postgres")]
             AlterTableImpl::Postgres(mut d) => {
-                let mut s = format!("ALTER TABLE {} ", d.name);
+                let mut s = format!("ALTER TABLE \"{}\" ", d.name);
 
                 match d.operation {
                     AlterTableOperation::RenameTo { name } => {
-                        write!(s, "RENAME TO {}", name).unwrap();
+                        write!(s, "RENAME TO \"{}\"", name).unwrap();
                     }
 
                     AlterTableOperation::RenameColumnTo {
@@ -201,7 +203,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                         operation.build(&mut s)?;
                     }
                     AlterTableOperation::DropColumn { name } => {
-                        write!(s, "DROP COLUMN {}", name).unwrap()
+                        write!(s, "DROP COLUMN \"{}\"", name).unwrap()
                     }
                 };
 

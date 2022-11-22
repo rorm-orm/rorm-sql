@@ -24,10 +24,18 @@ pub mod drop_table;
 pub mod error;
 /// Implementation of SQL INSERT statements
 pub mod insert;
+/// Implementation of JOIN statements
+pub mod join_table;
+/// Implementation of limit clauses
+pub mod limit_clause;
 /// Implementation of SQL ON CONFLICT extensions
 pub mod on_conflict;
+/// Implementation of ORDER BY expressions
+pub mod ordering;
 /// Implementation of SQL SELECT statements
 pub mod select;
+/// Implementation of identifiers in select queries
+pub mod select_column;
 /// Implementation of SQL UPDATE statements
 pub mod update;
 /// Implementation of supported datatypes
@@ -38,6 +46,7 @@ mod db_specific;
 use rorm_declaration::imr::{Annotation, DbType};
 
 use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
+use crate::conditional::Condition;
 use crate::create_column::{CreateColumnImpl, SQLAnnotation};
 use crate::create_index::{CreateIndex, CreateIndexData, CreateIndexImpl};
 use crate::create_table::{CreateTable, CreateTableData, CreateTableImpl};
@@ -47,6 +56,7 @@ use crate::create_trigger::{
 use crate::delete::{Delete, DeleteData, DeleteImpl};
 use crate::drop_table::{DropTable, DropTableData, DropTableImpl};
 use crate::insert::{Insert, InsertData, InsertImpl};
+use crate::join_table::{JoinTableData, JoinTableImpl, JoinType};
 use crate::on_conflict::OnConflict;
 use crate::select::{Select, SelectData, SelectImpl};
 use crate::update::{Update, UpdateData, UpdateImpl};
@@ -58,6 +68,8 @@ use crate::create_column::CreateColumnMySQLData;
 use crate::create_column::CreateColumnPostgresData;
 #[cfg(feature = "sqlite")]
 use crate::create_column::CreateColumnSQLiteData;
+use crate::ordering::OrderByEntry;
+use crate::select_column::{SelectColumnData, SelectColumnImpl};
 
 /**
 The main interface for creating sql strings
@@ -79,8 +91,8 @@ impl DBImpl {
     /**
     The entry point to create a table.
 
-    `name`: [&str]: Name of the table
-    `db_name`: [&str]: Name of the database.
+    **Parameter**:
+    - `name`: Name of the table
     */
     pub fn create_table<'until_build, 'post_build>(
         &self,
@@ -94,6 +106,7 @@ impl DBImpl {
             columns: vec![],
             if_not_exists: false,
             lookup: vec![],
+            pre_statements: vec![],
             statements: vec![],
         };
 
@@ -110,10 +123,11 @@ impl DBImpl {
     /**
     The entry point to create a trigger.
 
-    `name`: [&str]: Name of the trigger.
-    `table_name`: [&str]: Name of the table to create the trigger on.
-    `point_in_time`: [Option<SQLCreateTriggerPointInTime>]: When to execute the trigger.
-    `operation`: [SQLCreateTriggerOperation]: The operation that invokes the trigger.
+    **Parameter**:
+    - `name`: Name of the trigger.
+    - `table_name`: Name of the table to create the trigger on.
+    - `point_in_time`: [Option] of [SQLCreateTriggerPointInTime]: When to execute the trigger.
+    - `operation`: [SQLCreateTriggerOperation]: The operation that invokes the trigger.
     */
     pub fn create_trigger(
         &self,
@@ -136,8 +150,9 @@ impl DBImpl {
     /**
     The entry point to create an index.
 
-    `name`: [&str]: Name of the index.
-    `table_name`: [&str]: Table to create the index on.
+    **Parameter**:
+    - `name`: Name of the index.
+    - `table_name`: Table to create the index on.
     */
     pub fn create_index<'until_build>(
         &self,
@@ -166,7 +181,8 @@ impl DBImpl {
     /**
     The entry point to drop a table.
 
-    `name`: [&str]: Name of the table to drop.
+    **Parameter**:
+    - `name`: Name of the table to drop.
     */
     pub fn drop_table<'until_build>(
         &self,
@@ -189,8 +205,9 @@ impl DBImpl {
     /**
     The entry point to alter a table.
 
-    `name`: [&str]: Name of the table to execute the operation on.
-    `operation`: [crate::alter_table::SQLAlterTableOperation]: The operation to execute.
+    **Parameter**:
+    - `name`: Name of the table to execute the operation on.
+    - `operation`: [AlterTableOperation]: The operation to execute.
     */
     pub fn alter_table<'until_build, 'post_build>(
         &self,
@@ -220,18 +237,22 @@ impl DBImpl {
     /**
     The entry point to create a column in a table.
 
-    - `table_name`: [&str]: Name of the table.
-    - `name`: [&str]: Name of the column.
+    **Parameter**:
+    - `table_name`: Name of the table.
+    - `name`: Name of the column.
     - `data_type`: [DbType]: Data type of the column
-    - `annotations`: [Vec<Annotation>]: List of annotations.
+    - `annotations`: slice of [Annotation]: List of annotations.
     */
     pub fn create_column<'until_build, 'post_build>(
         &self,
-        #[cfg(any(feature = "sqlite", feature = "postgres"))] table_name: &'until_build str,
+        table_name: &'until_build str,
         name: &'until_build str,
         data_type: DbType,
         annotations: &'post_build [Annotation],
     ) -> CreateColumnImpl<'until_build, 'post_build> {
+        #[cfg(not(any(feature = "postgres", feature = "sqlite")))]
+        let _ = table_name;
+
         // Sort the annotations
         let mut a = vec![];
 
@@ -261,7 +282,7 @@ impl DBImpl {
             DBImpl::MySQL => CreateColumnImpl::MySQL(CreateColumnMySQLData {
                 name,
                 data_type,
-                annotations: vec![],
+                annotations: a,
                 statements: None,
                 lookup: None,
             }),
@@ -270,7 +291,8 @@ impl DBImpl {
                 name,
                 table_name,
                 data_type,
-                annotations: vec![],
+                annotations: a,
+                pre_statements: None,
                 statements: None,
             }),
         }
@@ -281,14 +303,18 @@ impl DBImpl {
 
     **Parameter**:
     - `columns`: The columns to select.
-    - `from_clause` specifies from what to select. This can be a table name or another query itself.
+    - `from_clause`: Specifies from what to select. This can be a table name or another query itself.
+    - `joins`: List of join tables.
     */
     pub fn select<'until_build, 'post_build>(
         &self,
-        columns: &'until_build [&'until_build str],
+        columns: &'until_build [SelectColumnImpl],
         from_clause: &'until_build str,
+        joins: &'until_build [JoinTableImpl<'until_build, 'post_build>],
+        order_by_clause: &'until_build [OrderByEntry<'until_build>],
     ) -> impl Select<'until_build, 'post_build> {
         let d = SelectData {
+            join_tables: joins,
             resulting_columns: columns,
             limit: None,
             offset: None,
@@ -296,6 +322,7 @@ impl DBImpl {
             where_clause: None,
             distinct: false,
             lookup: vec![],
+            order_by_clause,
         };
         match self {
             #[cfg(feature = "sqlite")]
@@ -313,7 +340,7 @@ impl DBImpl {
     **Parameter**:
     - `into_clause`: The table to insert into.
     - `insert_columns`: The column names to insert into.
-    - `insert_values`: The values to insert.
+    - `insert_values`: slice of slice of [Value]: The values to insert.
     */
     pub fn insert<'until_build, 'post_build>(
         &self,
@@ -390,6 +417,69 @@ impl DBImpl {
             DBImpl::MySQL => UpdateImpl::MySQL(d),
             #[cfg(feature = "postgres")]
             DBImpl::Postgres => UpdateImpl::Postgres(d),
+        }
+    }
+
+    /**
+    The entry point for a JOIN expression builder.
+
+    **Parameter**:
+    - `join_type`: [JoinType]: Type for a JOIN expression
+    - `table_name`: Table to perform the join on
+    - `join_alias`: Alias for the join table
+    - `join_condition`: [Condition] to apply to the join
+    */
+    pub fn join_table<'until_build, 'post_query>(
+        &self,
+        join_type: JoinType,
+        table_name: &'until_build str,
+        join_alias: &'until_build str,
+        join_condition: &'until_build Condition<'post_query>,
+    ) -> JoinTableImpl<'until_build, 'post_query> {
+        let d = JoinTableData {
+            join_type,
+            table_name,
+            join_alias,
+            join_condition,
+        };
+
+        match self {
+            #[cfg(feature = "sqlite")]
+            DBImpl::SQLite => JoinTableImpl::SQLite(d),
+            #[cfg(feature = "mysql")]
+            DBImpl::MySQL => JoinTableImpl::MySQL(d),
+            #[cfg(feature = "postgres")]
+            DBImpl::Postgres => JoinTableImpl::Postgres(d),
+        }
+    }
+
+    /**
+    The entry point for a column selector builder.
+
+    **Parameter**:
+    - `table_name`: Optional table name
+    - `column_name`: Name of the column
+    - `select_alias`: Alias for the selector
+     */
+    pub fn select_column<'until_build>(
+        &self,
+        table_name: Option<&'until_build str>,
+        column_name: &'until_build str,
+        select_alias: Option<&'until_build str>,
+    ) -> SelectColumnImpl<'until_build> {
+        let d = SelectColumnData {
+            table_name,
+            column_name,
+            select_alias,
+        };
+
+        match self {
+            #[cfg(feature = "sqlite")]
+            DBImpl::SQLite => SelectColumnImpl::SQLite(d),
+            #[cfg(feature = "mysql")]
+            DBImpl::MySQL => SelectColumnImpl::MySQL(d),
+            #[cfg(feature = "postgres")]
+            DBImpl::Postgres => SelectColumnImpl::Postgres(d),
         }
     }
 }
