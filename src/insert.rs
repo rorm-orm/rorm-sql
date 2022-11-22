@@ -40,7 +40,7 @@ pub struct InsertData<'until_build, 'post_build> {
 /**
 Implementation of the [Insert] trait for the different implementations.
 
-Should only be constructed via [DBImpl::insert].
+Should only be constructed via [DBImpl::insert](crate::DBImpl::insert).
  */
 #[derive(Debug)]
 pub enum InsertImpl<'until_build, 'post_build> {

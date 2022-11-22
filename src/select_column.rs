@@ -28,7 +28,7 @@ pub struct SelectColumnData<'until_build> {
 /**
 Representation of the column selector and implementation of the [SelectColumn] trait.
 
-Should only be constructed via [DBImpl::select_column].
+Should only be constructed via [DBImpl::select_column](crate::DBImpl::select_column).
  */
 #[derive(Clone, Debug)]
 pub enum SelectColumnImpl<'until_build> {
