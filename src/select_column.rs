@@ -1,3 +1,4 @@
+use crate::aggregation::SelectAggregator;
 use std::fmt::Write;
 
 /**
@@ -23,6 +24,8 @@ pub struct SelectColumnData<'until_build> {
     pub column_name: &'until_build str,
     /// Optional alias to set for the column
     pub select_alias: Option<&'until_build str>,
+    /// Optional aggregation function
+    pub aggregation: Option<SelectAggregator>,
 }
 
 /**
@@ -48,11 +51,26 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
         match self {
             #[cfg(feature = "sqlite")]
             SelectColumnImpl::SQLite(d) => {
+                if let Some(aggregation) = d.aggregation {
+                    match aggregation {
+                        SelectAggregator::Avg => write!(s, "AVG("),
+                        SelectAggregator::Count => write!(s, "COUNT("),
+                        SelectAggregator::Sum => write!(s, "SUM("),
+                        SelectAggregator::Max => write!(s, "MAX("),
+                        SelectAggregator::Min => write!(s, "MIN("),
+                    }
+                    .unwrap();
+                }
+
                 if let Some(table_name) = d.table_name {
                     write!(s, "{}.", table_name).unwrap();
                 }
 
                 write!(s, "{}", d.column_name).unwrap();
+
+                if d.aggregation.is_some() {
+                    write!(s, ")").unwrap();
+                }
 
                 if let Some(alias) = d.select_alias {
                     write!(s, " AS {}", alias).unwrap();

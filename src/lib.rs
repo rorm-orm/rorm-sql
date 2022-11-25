@@ -4,6 +4,8 @@
 #[cfg(not(any(feature = "sqlite", feature = "postgres", feature = "mysql")))]
 compile_error!("One of the features sqlite, postgres, mysql must be activated");
 
+/// Implementation of a aggregator functions
+pub mod aggregation;
 /// Implementation of SQL ALTER TABLE statements
 pub mod alter_table;
 ///This module defines the conditional statements
@@ -43,6 +45,7 @@ pub mod value;
 
 mod db_specific;
 
+use crate::aggregation::SelectAggregator;
 use rorm_declaration::imr::{Annotation, DbType};
 
 use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
@@ -460,17 +463,20 @@ impl DBImpl {
     - `table_name`: Optional table name
     - `column_name`: Name of the column
     - `select_alias`: Alias for the selector
+    - `aggregation`: Optional aggregation function
      */
     pub fn select_column<'until_build>(
         &self,
         table_name: Option<&'until_build str>,
         column_name: &'until_build str,
         select_alias: Option<&'until_build str>,
+        aggregation: Option<SelectAggregator>,
     ) -> SelectColumnImpl<'until_build> {
         let d = SelectColumnData {
             table_name,
             column_name,
             select_alias,
+            aggregation,
         };
 
         match self {
