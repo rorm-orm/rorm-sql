@@ -112,7 +112,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
             CreateColumnImpl::SQLite(mut d) => {
                 write!(
                     s,
-                    "{} {} ",
+                    "\"{}\" {} ",
                     d.name,
                     match d.data_type {
                         DbType::VarBinary => "BLOB",
@@ -194,7 +194,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
             }
             #[cfg(feature = "mysql")]
             CreateColumnImpl::MySQL(mut d) => {
-                write!(s, "{} ", d.name).unwrap();
+                write!(s, "\"{}\" ", d.name).unwrap();
 
                 match d.data_type {
                     DbType::VarChar => {
