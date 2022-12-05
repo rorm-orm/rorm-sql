@@ -94,7 +94,7 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
             #[cfg(feature = "sqlite")]
             CreateTableImpl::SQLite(mut d) => {
                 let mut s = format!(
-                    "CREATE TABLE{} {} (",
+                    "CREATE TABLE{} \"{}\" (",
                     if d.if_not_exists {
                         " IF NOT EXISTS"
                     } else {
@@ -132,7 +132,7 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
             #[cfg(feature = "mysql")]
             CreateTableImpl::MySQL(mut d) => {
                 let mut s = format!(
-                    "CREATE TABLE{} {} (",
+                    "CREATE TABLE{} \"{}\" (",
                     if d.if_not_exists {
                         " IF NOT EXISTS"
                     } else {
