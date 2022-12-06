@@ -344,12 +344,14 @@ impl DBImpl {
     - `into_clause`: The table to insert into.
     - `insert_columns`: The column names to insert into.
     - `insert_values`: slice of slice of [Value]: The values to insert.
+    - `returning_clause`: Optional slice of string to retrieve after the insert.
     */
     pub fn insert<'until_build, 'post_build>(
         &self,
         into_clause: &'until_build str,
         insert_columns: &'until_build [&'until_build str],
         insert_values: &'until_build [&'until_build [Value<'post_build>]],
+        returning_clause: Option<&'until_build [&'until_build str]>,
     ) -> impl Insert<'post_build>
     where
         'until_build: 'post_build,
@@ -360,6 +362,7 @@ impl DBImpl {
             row_values: insert_values,
             lookup: vec![],
             on_conflict: OnConflict::ABORT,
+            returning_clause,
         };
         match self {
             #[cfg(feature = "sqlite")]

@@ -35,6 +35,7 @@ pub struct InsertData<'until_build, 'post_build> {
     pub(crate) row_values: &'until_build [&'until_build [Value<'post_build>]],
     pub(crate) lookup: Vec<Value<'post_build>>,
     pub(crate) on_conflict: OnConflict,
+    pub(crate) returning_clause: Option<&'until_build [&'until_build str]>,
 }
 
 /**
@@ -114,6 +115,18 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     }
                 }
 
+                if let Some(ret_clause) = d.returning_clause {
+                    write!(s, "RETURNING ").unwrap();
+
+                    for (idx, c) in ret_clause.iter().enumerate() {
+                        write!(s, "\"{}\"", c).unwrap();
+
+                        if idx != ret_clause.len() - 1 {
+                            write!(s, ", ").unwrap();
+                        }
+                    }
+                }
+
                 write!(s, ";").unwrap();
 
                 (s, d.lookup)
@@ -149,6 +162,18 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     }
                 }
 
+                if let Some(ret_clause) = d.returning_clause {
+                    write!(s, "RETURNING ").unwrap();
+
+                    for (idx, c) in ret_clause.iter().enumerate() {
+                        write!(s, "\"{}\"", c).unwrap();
+
+                        if idx != ret_clause.len() - 1 {
+                            write!(s, ", ").unwrap();
+                        }
+                    }
+                }
+
                 write!(s, ";").unwrap();
 
                 (s, d.lookup)
@@ -181,6 +206,18 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     write!(s, ")").unwrap();
                     if idx != d.row_values.len() - 1 {
                         write!(s, ", ").unwrap();
+                    }
+                }
+
+                if let Some(ret_clause) = d.returning_clause {
+                    write!(s, "RETURNING ").unwrap();
+
+                    for (idx, c) in ret_clause.iter().enumerate() {
+                        write!(s, "\"{}\"", c).unwrap();
+
+                        if idx != ret_clause.len() - 1 {
+                            write!(s, ", ").unwrap();
+                        }
                     }
                 }
 
