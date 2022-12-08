@@ -45,9 +45,9 @@ pub mod value;
 
 mod db_specific;
 
-use crate::aggregation::SelectAggregator;
 use rorm_declaration::imr::{Annotation, DbType};
 
+use crate::aggregation::SelectAggregator;
 use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
 use crate::conditional::Condition;
 use crate::create_column::{CreateColumnImpl, SQLAnnotation};
@@ -61,7 +61,9 @@ use crate::drop_table::{DropTable, DropTableData, DropTableImpl};
 use crate::insert::{Insert, InsertData, InsertImpl};
 use crate::join_table::{JoinTableData, JoinTableImpl, JoinType};
 use crate::on_conflict::OnConflict;
+use crate::ordering::OrderByEntry;
 use crate::select::{Select, SelectData, SelectImpl};
+use crate::select_column::{SelectColumnData, SelectColumnImpl};
 use crate::update::{Update, UpdateData, UpdateImpl};
 use crate::value::Value;
 
@@ -71,8 +73,6 @@ use crate::create_column::CreateColumnMySQLData;
 use crate::create_column::CreateColumnPostgresData;
 #[cfg(feature = "sqlite")]
 use crate::create_column::CreateColumnSQLiteData;
-use crate::ordering::OrderByEntry;
-use crate::select_column::{SelectColumnData, SelectColumnImpl};
 
 /**
 The main interface for creating sql strings
