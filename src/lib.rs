@@ -352,9 +352,9 @@ impl DBImpl {
         insert_columns: &'until_build [&'until_build str],
         insert_values: &'until_build [&'until_build [Value<'post_build>]],
         returning_clause: Option<&'until_build [&'until_build str]>,
-    ) -> impl Insert<'post_build>
+    ) -> impl Insert<'post_build> + 'until_build
     where
-        'until_build: 'post_build,
+        'post_build: 'until_build,
     {
         let d = InsertData {
             into_clause,
