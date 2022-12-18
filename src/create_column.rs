@@ -194,7 +194,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
             }
             #[cfg(feature = "mysql")]
             CreateColumnImpl::MySQL(mut d) => {
-                write!(s, "\"{}\" ", d.name).unwrap();
+                write!(s, "`{}` ", d.name).unwrap();
 
                 match d.data_type {
                     DbType::VarChar => {
@@ -335,7 +335,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         Annotation::Unique => write!(s, "UNIQUE").unwrap(),
                         Annotation::ForeignKey(fk) => write!(
                             s,
-                            "REFERENCES \"{}\"(\"{}\") ON DELETE {} ON UPDATE {}",
+                            "REFERENCES `{}`(`{}`) ON DELETE {} ON UPDATE {}",
                             fk.table_name, fk.column_name, fk.on_delete, fk.on_update
                         )
                         .unwrap(),

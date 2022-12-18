@@ -133,18 +133,18 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
             }
             #[cfg(feature = "mysql")]
             AlterTableImpl::MySQL(mut d) => {
-                let mut s = format!("ALTER TABLE \"{}\" ", d.name);
+                let mut s = format!("ALTER TABLE `{}` ", d.name);
 
                 match d.operation {
                     AlterTableOperation::RenameTo { name } => {
-                        write!(s, "RENAME TO \"{}\"", name).unwrap();
+                        write!(s, "RENAME TO `{}`", name).unwrap();
                     }
                     AlterTableOperation::RenameColumnTo {
                         column_name,
                         new_column_name,
                     } => write!(
                         s,
-                        "RENAME COLUMN \"{}\" TO \"{}\"",
+                        "RENAME COLUMN `{}` TO `{}`",
                         column_name, new_column_name
                     )
                     .unwrap(),
@@ -166,7 +166,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                         operation.build(&mut s)?;
                     }
                     AlterTableOperation::DropColumn { name } => {
-                        write!(s, "DROP COLUMN \"{}\"", name).unwrap()
+                        write!(s, "DROP COLUMN `{}`", name).unwrap()
                     }
                 };
 
