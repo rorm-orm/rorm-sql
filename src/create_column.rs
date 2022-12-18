@@ -11,6 +11,9 @@ use crate::create_trigger::trigger_annotation_to_trigger_sqlite;
 use crate::error::Error;
 use crate::{Annotation, DbType, Value};
 
+#[cfg(feature = "mysql")]
+use crate::db_specific::mysql;
+
 #[cfg(feature = "postgres")]
 use crate::db_specific::postgres;
 
@@ -261,12 +264,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                                     "ENUM({}) ",
                                     values
                                         .iter()
-                                        .map(|x| {
-                                            if let Some(l) = &mut d.lookup {
-                                                l.push(Value::String(x));
-                                            }
-                                            String::from("?")
-                                        })
+                                        .map(|x| mysql::fmt(x))
                                         .collect::<Vec<String>>()
                                         .join(", ")
                                 )
