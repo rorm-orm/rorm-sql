@@ -133,9 +133,9 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             }
             #[cfg(feature = "mysql")]
             InsertImpl::MySQL(mut d) => {
-                let mut s = format!("INSERT INTO {} (", d.into_clause,);
+                let mut s = format!("INSERT INTO `{}` (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
-                    write!(s, "{}", x).unwrap();
+                    write!(s, "`{}`", x).unwrap();
                     if idx != d.columns.len() - 1 {
                         write!(s, ", ").unwrap();
                     }
@@ -182,7 +182,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             InsertImpl::Postgres(mut d) => {
                 let mut s = format!("INSERT INTO \"{}\" (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
-                    write!(s, "{}", x).unwrap();
+                    write!(s, "\"{}\"", x).unwrap();
                     if idx != d.columns.len() - 1 {
                         write!(s, ", ").unwrap();
                     }

@@ -79,10 +79,10 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
             #[cfg(feature = "mysql")]
             SelectColumnImpl::MySQL(d) => {
                 if let Some(table_name) = d.table_name {
-                    write!(s, "{}.", table_name).unwrap();
+                    write!(s, "`{}`.", table_name).unwrap();
                 }
 
-                write!(s, "{}", d.column_name).unwrap();
+                write!(s, "`{}`", d.column_name).unwrap();
 
                 if let Some(alias) = d.select_alias {
                     write!(s, " AS {}", alias).unwrap();
@@ -94,7 +94,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                     write!(s, "\"{}\".", table_name).unwrap();
                 }
 
-                write!(s, "{}", d.column_name).unwrap();
+                write!(s, "\"{}\"", d.column_name).unwrap();
 
                 if let Some(alias) = d.select_alias {
                     write!(s, " AS {}", alias).unwrap();
