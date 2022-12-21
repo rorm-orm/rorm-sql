@@ -210,7 +210,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                 }
 
                 if let Some(ret_clause) = d.returning_clause {
-                    write!(s, "RETURNING ").unwrap();
+                    write!(s, " RETURNING ").unwrap();
 
                     for (idx, c) in ret_clause.iter().enumerate() {
                         write!(s, "\"{}\"", c).unwrap();
