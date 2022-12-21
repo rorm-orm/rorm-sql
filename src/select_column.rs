@@ -78,11 +78,25 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
             }
             #[cfg(feature = "mysql")]
             SelectColumnImpl::MySQL(d) => {
+                if let Some(aggregation) = d.aggregation {
+                    match aggregation {
+                        SelectAggregator::Avg => write!(s, "AVG("),
+                        SelectAggregator::Count => write!(s, "COUNT("),
+                        SelectAggregator::Sum => write!(s, "SUM("),
+                        SelectAggregator::Max => write!(s, "MAX("),
+                        SelectAggregator::Min => write!(s, "MIN("),
+                    }
+                    .unwrap();
+                }
                 if let Some(table_name) = d.table_name {
                     write!(s, "`{}`.", table_name).unwrap();
                 }
 
                 write!(s, "`{}`", d.column_name).unwrap();
+
+                if d.aggregation.is_some() {
+                    write!(s, ")").unwrap();
+                }
 
                 if let Some(alias) = d.select_alias {
                     write!(s, " AS {}", alias).unwrap();
@@ -90,11 +104,25 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
             }
             #[cfg(feature = "postgres")]
             SelectColumnImpl::Postgres(d) => {
+                if let Some(aggregation) = d.aggregation {
+                    match aggregation {
+                        SelectAggregator::Avg => write!(s, "AVG("),
+                        SelectAggregator::Count => write!(s, "COUNT("),
+                        SelectAggregator::Sum => write!(s, "SUM("),
+                        SelectAggregator::Max => write!(s, "MAX("),
+                        SelectAggregator::Min => write!(s, "MIN("),
+                    }
+                    .unwrap();
+                }
                 if let Some(table_name) = d.table_name {
                     write!(s, "\"{}\".", table_name).unwrap();
                 }
 
                 write!(s, "\"{}\"", d.column_name).unwrap();
+
+                if d.aggregation.is_some() {
+                    write!(s, ")").unwrap();
+                }
 
                 if let Some(alias) = d.select_alias {
                     write!(s, " AS {}", alias).unwrap();
