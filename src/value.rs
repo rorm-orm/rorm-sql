@@ -1,12 +1,39 @@
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
+/// This enum represents a [Null](Value::Null)'s type
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum NullType {
+    /// String representation
+    String,
+    /// i64 representation
+    I64,
+    /// i32 representation
+    I32,
+    /// i16 representation
+    I16,
+    /// Bool representation
+    Bool,
+    /// f64 representation
+    F64,
+    /// f32 representation
+    F32,
+    /// binary representation
+    Binary,
+    /// Naive Time representation
+    NaiveTime,
+    /// Naive Date representation
+    NaiveDate,
+    /// Naive DateTime representation
+    NaiveDateTime,
+}
+
 /**
 This enum represents a value
  */
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Value<'a> {
     /// null representation
-    Null,
+    Null(NullType),
     /// Representation of an identifier, e.g. a column.
     /// This variant will not be escaped, so do not
     /// pass unchecked data to it.
