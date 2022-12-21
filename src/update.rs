@@ -180,7 +180,7 @@ impl<'until_build, 'post_build> Update<'until_build, 'post_build>
 
                 let update_index = d.updates.len() - 1;
                 for (idx, (name, value)) in d.updates.into_iter().enumerate() {
-                    write!(s, "{} = ?", name).unwrap();
+                    write!(s, "`{}` = ?", name).unwrap();
                     d.lookup.push(value);
                     if idx != update_index {
                         write!(s, ", ").unwrap();
