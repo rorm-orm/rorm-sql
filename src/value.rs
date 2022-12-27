@@ -1,7 +1,7 @@
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 /// This enum represents a [Null](Value::Null)'s type
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum NullType {
     /// String representation
     String,
