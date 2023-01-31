@@ -197,8 +197,8 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
         match self {
             Condition::Conjunction(conditions) | Condition::Disjunction(conditions) => {
                 let keyword = match self {
-                    Condition::Conjunction(_) => "AND",
-                    Condition::Disjunction(_) => "OR",
+                    Condition::Conjunction(_) => "AND ",
+                    Condition::Disjunction(_) => "OR ",
                     _ => unreachable!("All other possibilities would pass the outer match arm"),
                 };
                 write!(writer, "(")?;
