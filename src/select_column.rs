@@ -63,7 +63,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                 }
 
                 if let Some(table_name) = d.table_name {
-                    write!(s, "{}.", table_name).unwrap();
+                    write!(s, "{table_name}.").unwrap();
                 }
 
                 write!(s, "{}", d.column_name).unwrap();
@@ -73,7 +73,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                 }
 
                 if let Some(alias) = d.select_alias {
-                    write!(s, " AS {}", alias).unwrap();
+                    write!(s, " AS {alias}").unwrap();
                 }
             }
             #[cfg(feature = "mysql")]
@@ -89,7 +89,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                     .unwrap();
                 }
                 if let Some(table_name) = d.table_name {
-                    write!(s, "`{}`.", table_name).unwrap();
+                    write!(s, "`{table_name}`.").unwrap();
                 }
 
                 write!(s, "`{}`", d.column_name).unwrap();
@@ -99,7 +99,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                 }
 
                 if let Some(alias) = d.select_alias {
-                    write!(s, " AS {}", alias).unwrap();
+                    write!(s, " AS {alias}").unwrap();
                 }
             }
             #[cfg(feature = "postgres")]
@@ -115,7 +115,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                     .unwrap();
                 }
                 if let Some(table_name) = d.table_name {
-                    write!(s, "\"{}\".", table_name).unwrap();
+                    write!(s, "\"{table_name}\".").unwrap();
                 }
 
                 write!(s, "\"{}\"", d.column_name).unwrap();
@@ -125,7 +125,7 @@ impl<'until_build> SelectColumn for SelectColumnImpl<'until_build> {
                 }
 
                 if let Some(alias) = d.select_alias {
-                    write!(s, " AS {}", alias).unwrap();
+                    write!(s, " AS {alias}").unwrap();
                 }
             }
         }

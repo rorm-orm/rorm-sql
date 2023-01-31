@@ -91,15 +91,14 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
 
                 match d.operation {
                     AlterTableOperation::RenameTo { name } => {
-                        write!(s, "RENAME TO \"{}\"", name).unwrap();
+                        write!(s, "RENAME TO \"{name}\"").unwrap();
                     }
                     AlterTableOperation::RenameColumnTo {
                         column_name,
                         new_column_name,
                     } => write!(
                         s,
-                        "RENAME COLUMN \"{}\" TO \"{}\"",
-                        column_name, new_column_name
+                        "RENAME COLUMN \"{column_name}\" TO \"{new_column_name}\""
                     )
                     .unwrap(),
                     AlterTableOperation::AddColumn { mut operation } => {
@@ -120,7 +119,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                         operation.build(&mut s)?;
                     }
                     AlterTableOperation::DropColumn { name } => {
-                        write!(s, "DROP COLUMN \"{}\"", name).unwrap()
+                        write!(s, "DROP COLUMN \"{name}\"").unwrap()
                     }
                 };
 
@@ -137,17 +136,12 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
 
                 match d.operation {
                     AlterTableOperation::RenameTo { name } => {
-                        write!(s, "RENAME TO `{}`", name).unwrap();
+                        write!(s, "RENAME TO `{name}`").unwrap();
                     }
                     AlterTableOperation::RenameColumnTo {
                         column_name,
                         new_column_name,
-                    } => write!(
-                        s,
-                        "RENAME COLUMN `{}` TO `{}`",
-                        column_name, new_column_name
-                    )
-                    .unwrap(),
+                    } => write!(s, "RENAME COLUMN `{column_name}` TO `{new_column_name}`").unwrap(),
                     AlterTableOperation::AddColumn { mut operation } => {
                         write!(s, "ADD COLUMN ").unwrap();
 
@@ -166,7 +160,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                         operation.build(&mut s)?;
                     }
                     AlterTableOperation::DropColumn { name } => {
-                        write!(s, "DROP COLUMN `{}`", name).unwrap()
+                        write!(s, "DROP COLUMN `{name}`").unwrap()
                     }
                 };
 
@@ -183,7 +177,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
 
                 match d.operation {
                     AlterTableOperation::RenameTo { name } => {
-                        write!(s, "RENAME TO \"{}\"", name).unwrap();
+                        write!(s, "RENAME TO \"{name}\"").unwrap();
                     }
 
                     AlterTableOperation::RenameColumnTo {
@@ -192,8 +186,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                     } => {
                         write!(
                             s,
-                            "RENAME COLUMN \"{}\" TO \"{}\"",
-                            column_name, new_column_name
+                            "RENAME COLUMN \"{column_name}\" TO \"{new_column_name}\""
                         )
                         .unwrap();
                     }
@@ -213,7 +206,7 @@ impl<'until_build, 'post_build> AlterTable<'post_build>
                         operation.build(&mut s)?;
                     }
                     AlterTableOperation::DropColumn { name } => {
-                        write!(s, "DROP COLUMN \"{}\"", name).unwrap()
+                        write!(s, "DROP COLUMN \"{name}\"").unwrap()
                     }
                 };
 

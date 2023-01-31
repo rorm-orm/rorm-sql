@@ -72,30 +72,21 @@ pub(crate) fn trigger_annotation_to_trigger_postgres(
         statements.push(
             (
                 format!(
-                    "CREATE OR REPLACE FUNCTION {}_{}_auto_update_time_update_procedure() RETURNS TRIGGER AS $$ BEGIN NEW.{} = now(); RETURN NEW; END; $$ language 'plpgsql';",
-                    table_name,
-                    column_name,
-                    column_name,
+                    "CREATE OR REPLACE FUNCTION {table_name}_{column_name}_auto_update_time_update_procedure() RETURNS TRIGGER AS $$ BEGIN NEW.{column_name} = now(); RETURN NEW; END; $$ language 'plpgsql';"
                 ),
                 vec![],
             )
         );
         statements.push((
             format!(
-                "DROP TRIGGER IF EXISTS {}_{}_auto_update_time_update ON \"{}\";",
-                table_name, column_name, table_name
+                "DROP TRIGGER IF EXISTS {table_name}_{column_name}_auto_update_time_update ON \"{table_name}\";"
             ),
             vec![],
         ));
         statements.push(
             (
                 format!(
-                    "CREATE TRIGGER {}_{}_auto_update_time_update BEFORE UPDATE ON \"{}\" FOR EACH ROW WHEN (OLD IS DISTINCT FROM NEW) EXECUTE PROCEDURE {}_{}_auto_update_time_update_procedure();",
-                    table_name,
-                    column_name,
-                    table_name,
-                    table_name,
-                    column_name,
+                    "CREATE TRIGGER {table_name}_{column_name}_auto_update_time_update BEFORE UPDATE ON \"{table_name}\" FOR EACH ROW WHEN (OLD IS DISTINCT FROM NEW) EXECUTE PROCEDURE {table_name}_{column_name}_auto_update_time_update_procedure();"
                 ),
                 vec![],
             )
@@ -128,7 +119,7 @@ pub(crate) fn trigger_annotation_to_trigger_sqlite(
         statements.push((
             DBImpl::SQLite
                 .create_trigger(
-                    format!("{}_{}_auto_update_time", table_name, column_name).as_str(),
+                    format!("{table_name}_{column_name}_auto_update_time").as_str(),
                     table_name,
                     Some(SQLCreateTriggerPointInTime::After),
                     SQLCreateTriggerOperation::Update { columns: None },

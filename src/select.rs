@@ -152,7 +152,7 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                     let order_by_len = d.order_by_clause.len();
                     for (idx, entry) in d.order_by_clause.iter().enumerate() {
                         if let Some(table_name) = entry.table_name {
-                            write!(s, "{}.", table_name).unwrap();
+                            write!(s, "{table_name}.").unwrap();
                         };
                         write!(
                             s,
@@ -172,9 +172,9 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                 };
 
                 if let Some(limit) = d.limit {
-                    write!(s, " LIMIT {}", limit).unwrap();
+                    write!(s, " LIMIT {limit}").unwrap();
                     if let Some(offset) = d.offset {
-                        write!(s, " OFFSET {}", offset).unwrap();
+                        write!(s, " OFFSET {offset}").unwrap();
                     }
                 };
 
@@ -212,7 +212,7 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                     let order_by_len = d.order_by_clause.len();
                     for (idx, entry) in d.order_by_clause.iter().enumerate() {
                         if let Some(table_name) = entry.table_name {
-                            write!(s, "{}.", table_name).unwrap();
+                            write!(s, "{table_name}.").unwrap();
                         };
                         write!(
                             s,
@@ -232,9 +232,9 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                 };
 
                 if let Some(limit) = d.limit {
-                    write!(s, " LIMIT {}", limit).unwrap();
+                    write!(s, " LIMIT {limit}").unwrap();
                     if let Some(offset) = d.offset {
-                        write!(s, " OFFSET {}", offset).unwrap();
+                        write!(s, " OFFSET {offset}").unwrap();
                     }
                 };
 
@@ -272,7 +272,7 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                     let order_by_len = d.order_by_clause.len();
                     for (idx, entry) in d.order_by_clause.iter().enumerate() {
                         if let Some(table_name) = entry.table_name {
-                            write!(s, "\"{}\".", table_name).unwrap();
+                            write!(s, "\"{table_name}\".").unwrap();
                         };
                         write!(
                             s,
@@ -292,9 +292,9 @@ impl<'until_build, 'post_build> Select<'until_build, 'post_build>
                 };
 
                 if let Some(limit) = d.limit {
-                    write!(s, " LIMIT {}", limit).unwrap();
+                    write!(s, " LIMIT {limit}").unwrap();
                     if let Some(offset) = d.offset {
-                        write!(s, " OFFSET {}", offset).unwrap();
+                        write!(s, " OFFSET {offset}").unwrap();
                     }
                 };
 

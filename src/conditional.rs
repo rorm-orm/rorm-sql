@@ -54,7 +54,7 @@ impl<'a> BuildCondition<'a> for TernaryCondition<'a> {
         };
         write!(writer, "(")?;
         lhs.build_to_writer(writer, dialect, lookup)?;
-        write!(writer, " {} ", keyword)?;
+        write!(writer, " {keyword} ")?;
         mhs.build_to_writer(writer, dialect, lookup)?;
         write!(writer, " AND ")?;
         rhs.build_to_writer(writer, dialect, lookup)?;
@@ -117,7 +117,7 @@ impl<'a> BuildCondition<'a> for BinaryCondition<'a> {
         };
         write!(writer, "(")?;
         lhs.build_to_writer(writer, dialect, lookup)?;
-        write!(writer, " {} ", keyword)?;
+        write!(writer, " {keyword} ")?;
         rhs.build_to_writer(writer, dialect, lookup)?;
         write!(writer, ")")?;
         Ok(())
@@ -158,9 +158,9 @@ impl<'a> BuildCondition<'a> for UnaryCondition<'a> {
         write!(writer, "(")?;
         if postfix {
             value.build_to_writer(writer, dialect, lookup)?;
-            write!(writer, " {}", keyword)?;
+            write!(writer, " {keyword}")?;
         } else {
-            write!(writer, "{} ", keyword)?;
+            write!(writer, "{keyword} ")?;
             value.build_to_writer(writer, dialect, lookup)?;
         }
         write!(writer, ")")?;
@@ -206,7 +206,7 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
                     first.build_to_writer(writer, dialect, lookup)?;
                     conditions.iter().enumerate().try_for_each(|(idx, cond)| {
                         if idx > 0 {
-                            write!(writer, " {}", keyword)?;
+                            write!(writer, " {keyword}")?;
                             cond.build_to_writer(writer, dialect, lookup)?;
                         }
                         Ok(())
@@ -221,7 +221,7 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
                 ternary.build_to_writer(writer, dialect, lookup)
             }
             Condition::Value(value) => match value {
-                Value::Ident(string) => write!(writer, "{}", string),
+                Value::Ident(string) => write!(writer, "{string}"),
                 Value::Column {
                     table_name,
                     column_name,
@@ -229,23 +229,23 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
                     #[cfg(feature = "sqlite")]
                     DBImpl::SQLite => {
                         if let Some(table_name) = table_name {
-                            write!(writer, "{}.", table_name)?;
+                            write!(writer, "{table_name}.")?;
                         }
-                        write!(writer, "{}", column_name)
+                        write!(writer, "{column_name}")
                     }
                     #[cfg(feature = "mysql")]
                     DBImpl::MySQL => {
                         if let Some(table_name) = table_name {
-                            write!(writer, "{}.", table_name)?;
+                            write!(writer, "{table_name}.")?;
                         }
-                        write!(writer, "{}", column_name)
+                        write!(writer, "{column_name}")
                     }
                     #[cfg(feature = "postgres")]
                     DBImpl::Postgres => {
                         if let Some(table_name) = table_name {
-                            write!(writer, "\"{}\".", table_name)?;
+                            write!(writer, "\"{table_name}\".")?;
                         }
-                        write!(writer, "{}", column_name)
+                        write!(writer, "{column_name}")
                     }
                 },
                 _ => {

@@ -88,7 +88,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     d.into_clause,
                 );
                 for (idx, x) in d.columns.iter().enumerate() {
-                    write!(s, "{}", x).unwrap();
+                    write!(s, "{x}").unwrap();
                     if idx != d.columns.len() - 1 {
                         write!(s, ", ").unwrap();
                     }
@@ -119,7 +119,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     write!(s, " RETURNING ").unwrap();
 
                     for (idx, c) in ret_clause.iter().enumerate() {
-                        write!(s, "\"{}\"", c).unwrap();
+                        write!(s, "\"{c}\"").unwrap();
 
                         if idx != ret_clause.len() - 1 {
                             write!(s, ", ").unwrap();
@@ -135,7 +135,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             InsertImpl::MySQL(mut d) => {
                 let mut s = format!("INSERT INTO `{}` (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
-                    write!(s, "`{}`", x).unwrap();
+                    write!(s, "`{x}`").unwrap();
                     if idx != d.columns.len() - 1 {
                         write!(s, ", ").unwrap();
                     }
@@ -166,7 +166,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     write!(s, " RETURNING ").unwrap();
 
                     for (idx, c) in ret_clause.iter().enumerate() {
-                        write!(s, "`{}`", c).unwrap();
+                        write!(s, "`{c}`").unwrap();
 
                         if idx != ret_clause.len() - 1 {
                             write!(s, ", ").unwrap();
@@ -182,7 +182,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             InsertImpl::Postgres(mut d) => {
                 let mut s = format!("INSERT INTO \"{}\" (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
-                    write!(s, "\"{}\"", x).unwrap();
+                    write!(s, "\"{x}\"").unwrap();
                     if idx != d.columns.len() - 1 {
                         write!(s, ", ").unwrap();
                     }
@@ -213,7 +213,7 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     write!(s, " RETURNING ").unwrap();
 
                     for (idx, c) in ret_clause.iter().enumerate() {
-                        write!(s, "\"{}\"", c).unwrap();
+                        write!(s, "\"{c}\"").unwrap();
 
                         if idx != ret_clause.len() - 1 {
                             write!(s, ", ").unwrap();

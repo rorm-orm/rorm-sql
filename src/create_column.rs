@@ -166,8 +166,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                             DefaultValue::String(dv) => {
                                 write!(s, "DEFAULT {}", sqlite::fmt(dv)).unwrap()
                             }
-                            DefaultValue::Integer(i) => write!(s, "DEFAULT {}", i).unwrap(),
-                            DefaultValue::Float(f) => write!(s, "DEFAULT {}", f).unwrap(),
+                            DefaultValue::Integer(i) => write!(s, "DEFAULT {i}").unwrap(),
+                            DefaultValue::Float(f) => write!(s, "DEFAULT {f}").unwrap(),
                             DefaultValue::Boolean(b) => {
                                 if *b {
                                     write!(s, "DEFAULT 1").unwrap();
@@ -208,7 +208,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
-                                write!(s, "VARCHAR({}) ", max_length).unwrap();
+                                write!(s, "VARCHAR({max_length}) ").unwrap();
                             } else {
                                 return Err(Error::SQLBuildError(String::from(
                                     "VARCHAR must have a max_length annotation",
@@ -228,7 +228,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
-                                write!(s, "VARBINARY({}) ", max_length).unwrap();
+                                write!(s, "VARBINARY({max_length}) ").unwrap();
                             } else {
                                 return Err(Error::SQLBuildError(
                                     "VARBINARY must have a max_length annotation".to_string(),
@@ -318,8 +318,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                                 }
                                 write!(s, "DEFAULT ?").unwrap();
                             }
-                            DefaultValue::Integer(i) => write!(s, "DEFAULT {}", i).unwrap(),
-                            DefaultValue::Float(f) => write!(s, "DEFAULT {}", f).unwrap(),
+                            DefaultValue::Integer(i) => write!(s, "DEFAULT {i}").unwrap(),
+                            DefaultValue::Float(f) => write!(s, "DEFAULT {f}").unwrap(),
                             DefaultValue::Boolean(b) => {
                                 if *b {
                                     write!(s, "DEFAULT 1").unwrap();
@@ -360,7 +360,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
-                                write!(s, "character varying ({}) ", max_length).unwrap();
+                                write!(s, "character varying ({max_length}) ").unwrap();
                             } else {
                                 return Err(Error::SQLBuildError(
                                     "character varying must have a max_length annotation"
@@ -477,8 +477,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                             DefaultValue::String(dv) => {
                                 write!(s, "DEFAULT {}", postgres::fmt(dv)).unwrap()
                             }
-                            DefaultValue::Integer(i) => write!(s, "DEFAULT {}", i).unwrap(),
-                            DefaultValue::Float(f) => write!(s, "DEFAULT {}", f).unwrap(),
+                            DefaultValue::Integer(i) => write!(s, "DEFAULT {i}").unwrap(),
+                            DefaultValue::Float(f) => write!(s, "DEFAULT {f}").unwrap(),
                             DefaultValue::Boolean(b) => {
                                 if *b {
                                     write!(s, "DEFAULT true").unwrap();
