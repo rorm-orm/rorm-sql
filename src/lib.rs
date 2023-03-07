@@ -50,6 +50,12 @@ use rorm_declaration::imr::{Annotation, DbType};
 use crate::aggregation::SelectAggregator;
 use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
 use crate::conditional::Condition;
+#[cfg(feature = "mysql")]
+use crate::create_column::CreateColumnMySQLData;
+#[cfg(feature = "postgres")]
+use crate::create_column::CreateColumnPostgresData;
+#[cfg(feature = "sqlite")]
+use crate::create_column::CreateColumnSQLiteData;
 use crate::create_column::{CreateColumnImpl, SQLAnnotation};
 use crate::create_index::{CreateIndex, CreateIndexData, CreateIndexImpl};
 use crate::create_table::{CreateTable, CreateTableData, CreateTableImpl};
@@ -66,13 +72,6 @@ use crate::select::{Select, SelectData, SelectImpl};
 use crate::select_column::{SelectColumnData, SelectColumnImpl};
 use crate::update::{Update, UpdateData, UpdateImpl};
 use crate::value::Value;
-
-#[cfg(feature = "mysql")]
-use crate::create_column::CreateColumnMySQLData;
-#[cfg(feature = "postgres")]
-use crate::create_column::CreateColumnPostgresData;
-#[cfg(feature = "sqlite")]
-use crate::create_column::CreateColumnSQLiteData;
 
 /**
 The main interface for creating sql strings

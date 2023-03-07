@@ -1,7 +1,14 @@
 use std::fmt::Write;
 
 use crate::conditional::{BuildCondition, Condition};
+#[cfg(feature = "mysql")]
+use crate::db_specific::mysql;
+#[cfg(feature = "postgres")]
+use crate::db_specific::postgres;
+#[cfg(feature = "sqlite")]
+use crate::db_specific::sqlite;
 use crate::error::Error;
+use crate::value::NullType;
 use crate::{DBImpl, OnConflict, Value};
 
 /**
@@ -142,8 +149,14 @@ impl<'until_build, 'post_build> Update<'until_build, 'post_build>
 
                 let update_index = d.updates.len() - 1;
                 for (idx, (name, value)) in d.updates.into_iter().enumerate() {
-                    write!(s, "{name} = ?").unwrap();
-                    d.lookup.push(value);
+                    if let Value::Choice(c) = value {
+                        write!(s, "{name} = {}", sqlite::fmt(c)).unwrap();
+                    } else if let Value::Null(NullType::Choice) = value {
+                        write!(s, "{name} = NULL").unwrap();
+                    } else {
+                        write!(s, "{name} = ?").unwrap();
+                        d.lookup.push(value);
+                    }
                     if idx != update_index {
                         write!(s, ", ").unwrap();
                     }
@@ -180,8 +193,14 @@ impl<'until_build, 'post_build> Update<'until_build, 'post_build>
 
                 let update_index = d.updates.len() - 1;
                 for (idx, (name, value)) in d.updates.into_iter().enumerate() {
-                    write!(s, "`{name}` = ?").unwrap();
-                    d.lookup.push(value);
+                    if let Value::Choice(c) = value {
+                        write!(s, "`{name}` = {}", mysql::fmt(c)).unwrap();
+                    } else if let Value::Null(NullType::Choice) = value {
+                        write!(s, "`{name}` = NULL").unwrap();
+                    } else {
+                        write!(s, "`{name}` = ?").unwrap();
+                        d.lookup.push(value);
+                    }
                     if idx != update_index {
                         write!(s, ", ").unwrap();
                     }
@@ -211,8 +230,14 @@ impl<'until_build, 'post_build> Update<'until_build, 'post_build>
 
                 let update_index = d.updates.len() - 1;
                 for (idx, (name, value)) in d.updates.into_iter().enumerate() {
-                    d.lookup.push(value);
-                    write!(s, "\"{}\" = ${}", name, d.lookup.len()).unwrap();
+                    if let Value::Choice(c) = value {
+                        write!(s, "\"{name}\" = {}", postgres::fmt(c)).unwrap();
+                    } else if let Value::Null(NullType::Choice) = value {
+                        write!(s, "\"{name}\" = NULL").unwrap();
+                    } else {
+                        d.lookup.push(value);
+                        write!(s, "\"{name}\" = ${}", d.lookup.len()).unwrap();
+                    }
                     if idx != update_index {
                         write!(s, ", ").unwrap();
                     }

@@ -4,21 +4,16 @@ use rorm_declaration::imr::DefaultValue;
 
 #[cfg(feature = "postgres")]
 use crate::create_trigger::trigger_annotation_to_trigger_postgres;
-
 #[cfg(feature = "sqlite")]
 use crate::create_trigger::trigger_annotation_to_trigger_sqlite;
-
-use crate::error::Error;
-use crate::{Annotation, DbType, Value};
-
 #[cfg(feature = "mysql")]
 use crate::db_specific::mysql;
-
 #[cfg(feature = "postgres")]
 use crate::db_specific::postgres;
-
 #[cfg(feature = "sqlite")]
 use crate::db_specific::sqlite;
+use crate::error::Error;
+use crate::{Annotation, DbType, Value};
 
 /**
 Trait representing the create table builder.

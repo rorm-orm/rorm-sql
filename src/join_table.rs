@@ -1,5 +1,4 @@
-use std::fmt::Write;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 
 use crate::conditional::{BuildCondition, Condition};
 use crate::value::Value;

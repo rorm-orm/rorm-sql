@@ -1,5 +1,6 @@
-use crate::aggregation::SelectAggregator;
 use std::fmt::Write;
+
+use crate::aggregation::SelectAggregator;
 
 /**
 Trait representing a column builder.

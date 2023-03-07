@@ -1,7 +1,13 @@
-use crate::DBImpl;
 use std::fmt::{Debug, Error, Write};
 
-use crate::value::Value;
+#[cfg(feature = "mysql")]
+use crate::db_specific::mysql;
+#[cfg(feature = "postgres")]
+use crate::db_specific::postgres;
+#[cfg(feature = "sqlite")]
+use crate::db_specific::sqlite;
+use crate::value::{NullType, Value};
+use crate::DBImpl;
 
 /**
 Trait implementing constructing sql queries from a condition tree.
@@ -248,6 +254,16 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
                         write!(writer, "{column_name}")
                     }
                 },
+                Value::Choice(c) => match dialect {
+                    #[cfg(feature = "sqlite")]
+                    DBImpl::SQLite => write!(writer, "{}", sqlite::fmt(c)),
+                    #[cfg(feature = "mysql")]
+                    DBImpl::MySQL => write!(writer, "{}", mysql::fmt(c)),
+                    #[cfg(feature = "postgres")]
+                    DBImpl::Postgres => write!(writer, "{}", postgres::fmt(c)),
+                },
+                Value::Null(NullType::Choice) => write!(writer, "NULL"),
+
                 _ => {
                     lookup.push(*value);
                     match dialect {

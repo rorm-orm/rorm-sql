@@ -1,6 +1,13 @@
 use std::fmt::Write;
 
+#[cfg(feature = "mysql")]
+use crate::db_specific::mysql;
+#[cfg(feature = "postgres")]
+use crate::db_specific::postgres;
+#[cfg(feature = "sqlite")]
+use crate::db_specific::sqlite;
 use crate::on_conflict::OnConflict;
+use crate::value::NullType;
 use crate::Value;
 
 /**
@@ -100,6 +107,8 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     for (idx_2, y) in x.iter().enumerate() {
                         match y {
                             Value::Ident(st) => write!(s, "{}", *st).unwrap(),
+                            Value::Choice(c) => write!(s, "{}", sqlite::fmt(c)).unwrap(),
+                            Value::Null(NullType::Choice) => write!(s, "NULL").unwrap(),
                             _ => {
                                 d.lookup.push(*y);
                                 write!(s, "?").unwrap();
@@ -147,6 +156,8 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     for (idx_2, y) in x.iter().enumerate() {
                         match y {
                             Value::Ident(st) => write!(s, "{}", *st).unwrap(),
+                            Value::Choice(c) => write!(s, "{}", mysql::fmt(c)).unwrap(),
+                            Value::Null(NullType::Choice) => write!(s, "NULL").unwrap(),
                             _ => {
                                 d.lookup.push(*y);
                                 write!(s, "?").unwrap();
@@ -194,6 +205,8 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
                     for (idx_2, y) in x.iter().enumerate() {
                         match y {
                             Value::Ident(st) => write!(s, "\"{}\"", *st).unwrap(),
+                            Value::Choice(c) => write!(s, "{}", postgres::fmt(c)).unwrap(),
+                            Value::Null(NullType::Choice) => write!(s, "NULL").unwrap(),
                             _ => {
                                 d.lookup.push(*y);
                                 write!(s, "${}", d.lookup.len()).unwrap();
