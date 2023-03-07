@@ -1,6 +1,7 @@
 /// Error type to simplify propagating different error types.
 use std::{error, fmt};
 
+/// Error type to simplify propagating different error types.
 #[derive(Debug)]
 pub enum Error {
     /// Error while building sql.
