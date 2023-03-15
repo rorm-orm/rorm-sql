@@ -86,6 +86,33 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
         match self {
             #[cfg(feature = "sqlite")]
             InsertImpl::SQLite(mut d) => {
+                // Handle case, if no columns should be inserted, aka an empty insert
+                if d.columns.is_empty() {
+                    let mut s = format!(
+                        "INSERT {}INTO {} DEFAULT VALUES",
+                        match d.on_conflict {
+                            OnConflict::ABORT => "OR ABORT ",
+                            OnConflict::ROLLBACK => "OR ROLLBACK ",
+                        },
+                        d.into_clause,
+                    );
+
+                    if let Some(ret_clause) = d.returning_clause {
+                        write!(s, " RETURNING ").unwrap();
+
+                        for (idx, c) in ret_clause.iter().enumerate() {
+                            write!(s, "\"{c}\"").unwrap();
+
+                            if idx != ret_clause.len() - 1 {
+                                write!(s, ", ").unwrap();
+                            }
+                        }
+                    }
+                    write!(s, ";").unwrap();
+
+                    return (s, d.lookup);
+                }
+
                 let mut s = format!(
                     "INSERT {}INTO {} (",
                     match d.on_conflict {
@@ -142,6 +169,32 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             }
             #[cfg(feature = "mysql")]
             InsertImpl::MySQL(mut d) => {
+                if d.columns.is_empty() {
+                    let mut s = format!(
+                        "INSERT {}INTO `{}` DEFAULT VALUES",
+                        match d.on_conflict {
+                            OnConflict::ABORT => "OR ABORT ",
+                            OnConflict::ROLLBACK => "OR ROLLBACK ",
+                        },
+                        d.into_clause,
+                    );
+
+                    if let Some(ret_clause) = d.returning_clause {
+                        write!(s, " RETURNING ").unwrap();
+
+                        for (idx, c) in ret_clause.iter().enumerate() {
+                            write!(s, "`{c}`").unwrap();
+
+                            if idx != ret_clause.len() - 1 {
+                                write!(s, ", ").unwrap();
+                            }
+                        }
+                    }
+                    write!(s, ";").unwrap();
+
+                    return (s, d.lookup);
+                }
+
                 let mut s = format!("INSERT INTO `{}` (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
                     write!(s, "`{x}`").unwrap();
@@ -191,6 +244,25 @@ impl<'until_build, 'post_build> Insert<'post_build> for InsertImpl<'until_build,
             }
             #[cfg(feature = "postgres")]
             InsertImpl::Postgres(mut d) => {
+                if d.columns.is_empty() {
+                    let mut s = format!("INSERT INTO \"{}\" DEFAULT VALUES", d.into_clause);
+
+                    if let Some(ret_clause) = d.returning_clause {
+                        write!(s, " RETURNING ").unwrap();
+
+                        for (idx, c) in ret_clause.iter().enumerate() {
+                            write!(s, "\"{c}\"").unwrap();
+
+                            if idx != ret_clause.len() - 1 {
+                                write!(s, ", ").unwrap();
+                            }
+                        }
+                    }
+                    write!(s, ";").unwrap();
+
+                    return (s, d.lookup);
+                }
+
                 let mut s = format!("INSERT INTO \"{}\" (", d.into_clause);
                 for (idx, x) in d.columns.iter().enumerate() {
                     write!(s, "\"{x}\"").unwrap();
