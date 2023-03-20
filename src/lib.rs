@@ -1,4 +1,5 @@
 //! The module should be used to create sql queries for different SQL dialects.
+#![cfg_attr(all(doc, CHANNEL_NIGHTLY), feature(doc_auto_cfg))]
 #![warn(missing_docs)]
 
 #[cfg(not(any(feature = "sqlite", feature = "postgres", feature = "mysql")))]

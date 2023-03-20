@@ -20,8 +20,11 @@ libsqlite3-sys = { version = "~0.24", optional = true }
 
 rorm-declaration = { version = "0.3.0", path = "../rorm-declaration" }
 
+[build-dependencies]
+rustc_version = "0.4.0"
+
 [package.metadata.docs.rs]
-features = ["sqlite", "postgres", "mysql"]
+all-features = true
 
 [features]
 sqlite = [
