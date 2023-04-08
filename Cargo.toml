@@ -1,6 +1,6 @@
 [package]
 name = "rorm-sql"
-version = "0.6.1"
+version = "0.6.2"
 edition = "2021"
 keywords = ["database", "abstraction-layer", "sqlite", "postgres", "mysql"]
 categories = ["database"]
@@ -13,7 +13,7 @@ description = "The sql abstraction layer."
 
 [dependencies]
 # Date & time library
-chrono = { version = ">=0.4.20" }
+chrono = { version = ">=0.4.20", default-features = false }
 
 # SQlite bindings for printf
 libsqlite3-sys = { version = "~0.24", optional = true }
