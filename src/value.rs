@@ -1,4 +1,6 @@
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
+use time::{Date, OffsetDateTime, PrimitiveDateTime, Time};
+use uuid::Uuid;
 
 /// This enum represents a [Null](Value::Null)'s type
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -22,11 +24,38 @@ pub enum NullType {
     /// binary representation
     Binary,
     /// Naive Time representation
-    NaiveTime,
+    ChronoNaiveTime,
     /// Naive Date representation
-    NaiveDate,
+    ChronoNaiveDate,
     /// Naive DateTime representation
-    NaiveDateTime,
+    ChronoNaiveDateTime,
+    /// Chrono timezone aware date time representation
+    ChronoDateTime,
+    /// time's date representation
+    TimeDate,
+    /// time's time representation
+    TimeTime,
+    /// time's offset datetime representation
+    TimeOffsetDateTime,
+    /// time's primitive datetime representation
+    TimePrimitiveDateTime,
+    /// Uuid representation
+    Uuid,
+    /// Uuid in hyphenated representation
+    UuidHyphenated,
+    /// Uuid in simple text representation
+    UuidSimple,
+    /// serde_json's Value representation
+    JsonValue,
+    /// Mac address representation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    MacAddress,
+    /// IP network presentation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    IpNetwork,
+    /// Bit vec representation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    BitVec,
 }
 
 /**
@@ -66,10 +95,37 @@ pub enum Value<'a> {
     F32(f32),
     /// binary representation
     Binary(&'a [u8]),
-    /// Naive Time representation
-    NaiveTime(NaiveTime),
-    /// Naive Date representation
-    NaiveDate(NaiveDate),
-    /// Naive DateTime representation
-    NaiveDateTime(NaiveDateTime),
+    /// chrono's Naive Time representation
+    ChronoNaiveTime(NaiveTime),
+    /// chrono's Naive Date representation
+    ChronoNaiveDate(NaiveDate),
+    /// chrono's Naive DateTime representation
+    ChronoNaiveDateTime(NaiveDateTime),
+    /// chrono's Timezone aware datetime
+    ChronoDateTime(DateTime<Utc>),
+    /// time's date representation
+    TimeDate(Date),
+    /// time's time representation
+    TimeTime(Time),
+    /// time's offset datetime representation
+    TimeOffsetDateTime(OffsetDateTime),
+    /// time's primitive datetime representation
+    TimePrimitiveDateTime(PrimitiveDateTime),
+    /// Uuid representation
+    Uuid(Uuid),
+    /// Uuid in hyphenated representation
+    UuidHyphenated(Uuid),
+    /// Uuid in simple text representation
+    UuidSimple(Uuid),
+    /// serde_json's Value representation
+    JsonValue(&'a serde_json::Value),
+    /// Mac address representation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    MacAddress([u8; 6]),
+    /// IP network presentation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    IpNetwork(ip_network::IpNetwork),
+    /// Bit vec representation
+    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    BitVec(&'a bit_vec::BitVec),
 }
