@@ -113,7 +113,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                     "\"{}\" {} ",
                     d.name,
                     match d.data_type {
-                        DbType::VarBinary => "BLOB",
+                        DbType::Binary | DbType::Uuid => "BLOB",
                         DbType::VarChar
                         | DbType::Date
                         | DbType::DateTime
@@ -126,6 +126,9 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                         | DbType::Int64
                         | DbType::Boolean => "INTEGER",
                         DbType::Float | DbType::Double => "REAL",
+                        DbType::BitVec | DbType::MacAddress | DbType::IpNetwork => unreachable!(
+                            "BitVec, MacAddress and IpNetwork are not available for sqlite"
+                        ),
                     }
                 )
                 .unwrap();
@@ -203,7 +206,12 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
 
                         if let Some(a) = a_opt {
                             if let Annotation::MaxLength(max_length) = a.annotation {
-                                write!(s, "VARCHAR({max_length}) ").unwrap();
+                                // utf8mb4 is 4 bytes wide, so that's the maximum for varchar
+                                if *max_length < 2i32.pow(14) - 1 {
+                                    write!(s, "VARCHAR({max_length}) ").unwrap();
+                                } else {
+                                    write!(s, "LONGTEXT ").unwrap();
+                                }
                             } else {
                                 return Err(Error::SQLBuildError(String::from(
                                     "VARCHAR must have a max_length annotation",
@@ -215,26 +223,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                             )));
                         }
                     }
-                    DbType::VarBinary => {
-                        let a_opt = d
-                            .annotations
-                            .iter()
-                            .find(|x| x.annotation.eq_shallow(&Annotation::MaxLength(0)));
-
-                        if let Some(a) = a_opt {
-                            if let Annotation::MaxLength(max_length) = a.annotation {
-                                write!(s, "VARBINARY({max_length}) ").unwrap();
-                            } else {
-                                return Err(Error::SQLBuildError(
-                                    "VARBINARY must have a max_length annotation".to_string(),
-                                ));
-                            }
-                        } else {
-                            return Err(Error::SQLBuildError(
-                                "VARBINARY must have a max_length annotation".to_string(),
-                            ));
-                        }
-                    }
+                    DbType::Binary | DbType::Uuid => write!(s, "LONGBLOB ").unwrap(),
                     DbType::Int8 => write!(s, "TINYINT(255) ").unwrap(),
                     DbType::Int16 => write!(s, "SMALLINT(255) ").unwrap(),
                     DbType::Int32 => write!(s, "INT(255) ").unwrap(),
@@ -274,6 +263,9 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                                 "VARCHAR must have a MaxLength annotation".to_string(),
                             ));
                         }
+                    }
+                    DbType::BitVec | DbType::IpNetwork | DbType::MacAddress => {
+                        unreachable!("BitVec, MacAddress and IpNetwork are not available for mysql")
                     }
                 };
 
@@ -403,7 +395,11 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                             ));
                         }
                     }
-                    DbType::VarBinary => write!(s, "bytea ").unwrap(),
+                    DbType::Uuid => write!(s, "uuid ").unwrap(),
+                    DbType::MacAddress => write!(s, "macaddr ").unwrap(),
+                    DbType::IpNetwork => write!(s, "inet ").unwrap(),
+                    DbType::BitVec => write!(s, "varbit ").unwrap(),
+                    DbType::Binary => write!(s, "bytea ").unwrap(),
                     DbType::Int8 => write!(s, "smallint ").unwrap(),
                     DbType::Int16 => {
                         if d.annotations
