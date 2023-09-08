@@ -48,13 +48,13 @@ pub enum NullType {
     /// serde_json's Value representation
     JsonValue,
     /// Mac address representation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     MacAddress,
     /// IP network presentation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     IpNetwork,
     /// Bit vec representation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     BitVec,
 }
 
@@ -120,12 +120,12 @@ pub enum Value<'a> {
     /// serde_json's Value representation
     JsonValue(&'a serde_json::Value),
     /// Mac address representation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     MacAddress(mac_address::MacAddress),
     /// IP network presentation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     IpNetwork(ipnetwork::IpNetwork),
     /// Bit vec representation
-    #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
+    #[cfg(feature = "postgres-only")]
     BitVec(&'a bit_vec::BitVec),
 }
