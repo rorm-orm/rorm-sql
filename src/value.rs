@@ -121,10 +121,10 @@ pub enum Value<'a> {
     JsonValue(&'a serde_json::Value),
     /// Mac address representation
     #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
-    MacAddress([u8; 6]),
+    MacAddress(mac_address::MacAddress),
     /// IP network presentation
     #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
-    IpNetwork(ip_network::IpNetwork),
+    IpNetwork(ipnetwork::IpNetwork),
     /// Bit vec representation
     #[cfg(all(feature = "postgres", not(any(feature = "mysql", feature = "sqlite"))))]
     BitVec(&'a bit_vec::BitVec),
