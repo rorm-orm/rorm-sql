@@ -435,7 +435,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                     DbType::Double => write!(s, "double precision ").unwrap(),
                     DbType::Boolean => write!(s, "boolean ").unwrap(),
                     DbType::Date => write!(s, "date ").unwrap(),
-                    DbType::DateTime => write!(s, "timestamptz").unwrap(),
+                    DbType::DateTime => write!(s, "timestamptz ").unwrap(),
                     DbType::Timestamp => write!(s, "timestamp ").unwrap(),
                     DbType::Time => write!(s, "time ").unwrap(),
                 };
