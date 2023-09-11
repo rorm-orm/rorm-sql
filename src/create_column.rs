@@ -435,7 +435,8 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                     DbType::Double => write!(s, "double precision ").unwrap(),
                     DbType::Boolean => write!(s, "boolean ").unwrap(),
                     DbType::Date => write!(s, "date ").unwrap(),
-                    DbType::DateTime | DbType::Timestamp => write!(s, "timestamp ").unwrap(),
+                    DbType::DateTime => write!(s, "timestamptz").unwrap(),
+                    DbType::Timestamp => write!(s, "timestamp ").unwrap(),
                     DbType::Time => write!(s, "time ").unwrap(),
                 };
 
@@ -456,7 +457,7 @@ impl<'until_build, 'post_build> CreateColumn<'post_build>
                                 "DEFAULT {}",
                                 match d.data_type {
                                     DbType::Date => "CURRENT_DATE",
-                                    DbType::DateTime => "CURRENT_TIMESTAMP",
+                                    DbType::DateTime => "now()",
                                     DbType::Timestamp => "CURRENT_TIMESTAMP",
                                     DbType::Time => "CURRENT_TIME",
                                     _ => "",
