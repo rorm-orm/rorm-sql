@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::{Display, Formatter, Write};
 
 use crate::conditional::{BuildCondition, Condition};
@@ -63,13 +64,13 @@ pub trait JoinTable<'post_query> {
     - `s`: Mutable reference to String to write to.
     - `lookup`: List of values for bind parameter.
     */
-    fn build(self, s: &mut String, lookup: &mut Vec<Value<'post_query>>);
+    fn build(&self, s: &mut String, lookup: &mut Vec<Value<'post_query>>);
 }
 
 /**
 Data of a JOIN expression.
 */
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct JoinTableData<'until_build, 'post_query> {
     /// Type of the join operation
     pub join_type: JoinType,
@@ -78,7 +79,7 @@ pub struct JoinTableData<'until_build, 'post_query> {
     /// Alias for the join table
     pub join_alias: &'until_build str,
     /// Condition to apply the join on
-    pub join_condition: &'until_build Condition<'post_query>,
+    pub join_condition: Cow<'until_build, Condition<'post_query>>,
 }
 
 /**
@@ -86,7 +87,7 @@ Representation of the JOIN expression
 
 Should only be constructed via [DBImpl::join_table].
 */
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum JoinTableImpl<'until_build, 'post_query> {
     /**
     SQLite representation of a JOIN expression.
@@ -108,7 +109,7 @@ pub enum JoinTableImpl<'until_build, 'post_query> {
 impl<'until_build, 'post_query> JoinTable<'post_query>
     for JoinTableImpl<'until_build, 'post_query>
 {
-    fn build(self, s: &mut String, lookup: &mut Vec<Value<'post_query>>) {
+    fn build(&self, s: &mut String, lookup: &mut Vec<Value<'post_query>>) {
         match self {
             #[cfg(feature = "sqlite")]
             JoinTableImpl::SQLite(d) => write!(

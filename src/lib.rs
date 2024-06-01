@@ -46,54 +46,34 @@ pub mod value;
 
 mod db_specific;
 
-use rorm_declaration::imr::Annotation;
-use rorm_declaration::imr::DbType;
+use std::borrow::Cow;
+
+use rorm_declaration::imr::{Annotation, DbType};
 
 use crate::aggregation::SelectAggregator;
-use crate::alter_table::AlterTable;
-use crate::alter_table::AlterTableData;
-use crate::alter_table::AlterTableImpl;
-use crate::alter_table::AlterTableOperation;
+use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
 use crate::conditional::Condition;
-use crate::create_column::CreateColumnImpl;
 #[cfg(feature = "mysql")]
 use crate::create_column::CreateColumnMySQLData;
 #[cfg(feature = "postgres")]
 use crate::create_column::CreateColumnPostgresData;
 #[cfg(feature = "sqlite")]
 use crate::create_column::CreateColumnSQLiteData;
-use crate::create_column::SQLAnnotation;
-use crate::create_index::CreateIndex;
-use crate::create_index::CreateIndexData;
-use crate::create_index::CreateIndexImpl;
-use crate::create_table::CreateTable;
-use crate::create_table::CreateTableData;
-use crate::create_table::CreateTableImpl;
-use crate::create_trigger::SQLCreateTrigger;
-use crate::create_trigger::SQLCreateTriggerOperation;
-use crate::create_trigger::SQLCreateTriggerPointInTime;
-use crate::delete::Delete;
-use crate::delete::DeleteData;
-use crate::delete::DeleteImpl;
-use crate::drop_table::DropTable;
-use crate::drop_table::DropTableData;
-use crate::drop_table::DropTableImpl;
-use crate::insert::Insert;
-use crate::insert::InsertData;
-use crate::insert::InsertImpl;
-use crate::join_table::JoinTableData;
-use crate::join_table::JoinTableImpl;
-use crate::join_table::JoinType;
+use crate::create_column::{CreateColumnImpl, SQLAnnotation};
+use crate::create_index::{CreateIndex, CreateIndexData, CreateIndexImpl};
+use crate::create_table::{CreateTable, CreateTableData, CreateTableImpl};
+use crate::create_trigger::{
+    SQLCreateTrigger, SQLCreateTriggerOperation, SQLCreateTriggerPointInTime,
+};
+use crate::delete::{Delete, DeleteData, DeleteImpl};
+use crate::drop_table::{DropTable, DropTableData, DropTableImpl};
+use crate::insert::{Insert, InsertData, InsertImpl};
+use crate::join_table::{JoinTableData, JoinTableImpl, JoinType};
 use crate::on_conflict::OnConflict;
 use crate::ordering::OrderByEntry;
-use crate::select::Select;
-use crate::select::SelectData;
-use crate::select::SelectImpl;
-use crate::select_column::SelectColumnData;
-use crate::select_column::SelectColumnImpl;
-use crate::update::Update;
-use crate::update::UpdateData;
-use crate::update::UpdateImpl;
+use crate::select::{Select, SelectData, SelectImpl};
+use crate::select_column::{SelectColumnData, SelectColumnImpl};
+use crate::update::{Update, UpdateData, UpdateImpl};
 use crate::value::Value;
 
 /**
@@ -468,7 +448,7 @@ impl DBImpl {
         join_type: JoinType,
         table_name: &'until_build str,
         join_alias: &'until_build str,
-        join_condition: &'until_build Condition<'post_query>,
+        join_condition: Cow<'until_build, Condition<'post_query>>,
     ) -> JoinTableImpl<'until_build, 'post_query> {
         let d = JoinTableData {
             join_type,

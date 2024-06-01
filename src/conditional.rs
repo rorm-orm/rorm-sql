@@ -39,7 +39,7 @@ pub trait BuildCondition<'a>: 'a {
 /**
 This enum represents all available ternary expression.
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TernaryCondition<'a> {
     /// Between represents "{} BETWEEN {} AND {}" from SQL
     Between(Box<[Condition<'a>; 3]>),
@@ -72,7 +72,7 @@ impl<'a> BuildCondition<'a> for TernaryCondition<'a> {
 /**
 This enum represents a binary expression.
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum BinaryCondition<'a> {
     /// Representation of "{} = {}" in SQL
     Equals(Box<[Condition<'a>; 2]>),
@@ -133,7 +133,7 @@ impl<'a> BuildCondition<'a> for BinaryCondition<'a> {
 /**
 This enum represents all available unary conditions.
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum UnaryCondition<'a> {
     /// Representation of SQL's "{} IS NULL"
     IsNull(Box<Condition<'a>>),
@@ -177,7 +177,7 @@ impl<'a> BuildCondition<'a> for UnaryCondition<'a> {
 /**
 This enum represents a condition tree.
 */
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Condition<'a> {
     /// A list of [Condition]s, that get expanded to "{} AND {} ..."
     Conjunction(Vec<Condition<'a>>),
