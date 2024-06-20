@@ -382,7 +382,7 @@ impl DBImpl {
     **Parameter**:
     - `table_name`: Name of the table to delete from.
     */
-    pub fn delete<'until_build, 'post_query>(
+    pub fn delete<'until_build, 'post_query: 'until_build>(
         &self,
         table_name: &'until_build str,
     ) -> impl Delete<'until_build, 'post_query>
@@ -410,7 +410,7 @@ impl DBImpl {
     **Parameter**:
     - `table_name`: Name of the table the updates should be executed for.
     */
-    pub fn update<'until_build, 'post_query>(
+    pub fn update<'until_build, 'post_query: 'until_build>(
         &self,
         table_name: &'until_build str,
     ) -> impl Update<'until_build, 'post_query>
