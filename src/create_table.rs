@@ -2,117 +2,59 @@ use std::fmt::Write;
 
 use crate::create_column::{CreateColumn, CreateColumnImpl};
 use crate::error::Error;
-use crate::Value;
+use crate::{DBImpl, Value};
 
-/**
-The trait representing a create table builder
-*/
-pub trait CreateTable<'until_build, 'post_build> {
-    /**
-    Add a column to the table.
-     */
-    fn add_column(self, column: CreateColumnImpl<'until_build, 'post_build>) -> Self;
-
-    /**
-    Sets the IF NOT EXISTS trait on the table
-     */
-    fn if_not_exists(self) -> Self;
-
-    /**
-    This method is used to convert the current state for the given dialect in a
-    list of tuples.
-
-    Each tuple consists of the query string and the corresponding bind parameters.
-     */
-    fn build(self) -> Result<Vec<(String, Vec<Value<'post_build>>)>, Error>;
-}
-
-/**
-The representation of an create table operation.
-*/
-pub struct CreateTableData<'until_build, 'post_build> {
+/// The builder for a `CREATE TABLE` statement
+pub struct CreateTableBuilder<'until_build, 'post_build> {
     pub(crate) name: &'until_build str,
     pub(crate) columns: Vec<CreateColumnImpl<'until_build, 'post_build>>,
     pub(crate) if_not_exists: bool,
     pub(crate) lookup: Vec<Value<'post_build>>,
     pub(crate) pre_statements: Vec<(String, Vec<Value<'post_build>>)>,
     pub(crate) statements: Vec<(String, Vec<Value<'post_build>>)>,
+    pub(crate) dialect: DBImpl,
 }
 
-/**
-The implementation of the [CreateTable] trait for different database dialects.
-
-This should only be constructed via [crate::DBImpl::create_table].
-*/
-pub enum CreateTableImpl<'until_build, 'post_build> {
-    /**
-    SQLite representation of the CREATE TABLE operation.
-     */
-    #[cfg(feature = "sqlite")]
-    SQLite(CreateTableData<'until_build, 'post_build>),
-    /**
-    MySQL representation of the CREATE TABLE operation.
-     */
-    #[cfg(feature = "mysql")]
-    MySQL(CreateTableData<'until_build, 'post_build>),
-    /**
-    Postgres representation of the CREATE TABLE operation.
-     */
-    #[cfg(feature = "postgres")]
-    Postgres(CreateTableData<'until_build, 'post_build>),
-}
-
-impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
-    for CreateTableImpl<'until_build, 'post_build>
-{
-    fn add_column(mut self, column: CreateColumnImpl<'until_build, 'post_build>) -> Self {
-        match self {
-            #[cfg(feature = "sqlite")]
-            CreateTableImpl::SQLite(ref mut d) => d.columns.push(column),
-            #[cfg(feature = "mysql")]
-            CreateTableImpl::MySQL(ref mut d) => d.columns.push(column),
-            #[cfg(feature = "postgres")]
-            CreateTableImpl::Postgres(ref mut d) => d.columns.push(column),
-        }
+impl<'until_build, 'post_build> CreateTableBuilder<'until_build, 'post_build> {
+    /// Add a column to the table
+    pub fn add_column(mut self, column: CreateColumnImpl<'until_build, 'post_build>) -> Self {
+        self.columns.push(column);
         self
     }
 
-    fn if_not_exists(mut self) -> Self {
-        match self {
-            #[cfg(feature = "sqlite")]
-            CreateTableImpl::SQLite(ref mut d) => d.if_not_exists = true,
-            #[cfg(feature = "mysql")]
-            CreateTableImpl::MySQL(ref mut d) => d.if_not_exists = true,
-            #[cfg(feature = "postgres")]
-            CreateTableImpl::Postgres(ref mut d) => d.if_not_exists = true,
-        }
+    /// Sets the IF NOT EXISTS trait on the table
+    pub fn if_not_exists(mut self) -> Self {
+        self.if_not_exists = true;
         self
     }
 
-    fn build(self) -> Result<Vec<(String, Vec<Value<'post_build>>)>, Error> {
-        match self {
+    /// This method is used to convert the current state for the given dialect in a list of tuples.
+    ///
+    /// Each tuple consists of a query string and the corresponding bind parameters.
+    pub fn build(mut self) -> Result<Vec<(String, Vec<Value<'post_build>>)>, Error> {
+        match self.dialect {
             #[cfg(feature = "sqlite")]
-            CreateTableImpl::SQLite(mut d) => {
+            DBImpl::SQLite => {
                 let mut s = format!(
                     "CREATE TABLE{} \"{}\" (",
-                    if d.if_not_exists {
+                    if self.if_not_exists {
                         " IF NOT EXISTS"
                     } else {
                         ""
                     },
-                    d.name
+                    self.name
                 );
 
-                let columns_len = d.columns.len() - 1;
-                for (idx, mut x) in d.columns.into_iter().enumerate() {
+                let columns_len = self.columns.len() - 1;
+                for (idx, mut x) in self.columns.into_iter().enumerate() {
                     #[cfg(any(feature = "mysql", feature = "postgres"))]
                     if let CreateColumnImpl::SQLite(ref mut cci) = x {
-                        cci.statements = Some(&mut d.statements)
+                        cci.statements = Some(&mut self.statements)
                     }
                     #[cfg(not(any(feature = "mysql", feature = "postgres")))]
                     {
                         let CreateColumnImpl::SQLite(ref mut cci) = x;
-                        cci.statements = Some(&mut d.statements);
+                        cci.statements = Some(&mut self.statements);
                     }
 
                     x.build(&mut s)?;
@@ -124,33 +66,33 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
 
                 write!(s, ") STRICT; ").unwrap();
 
-                let mut statements = vec![(s, d.lookup)];
-                statements.extend(d.statements);
+                let mut statements = vec![(s, self.lookup)];
+                statements.extend(self.statements);
 
                 Ok(statements)
             }
             #[cfg(feature = "mysql")]
-            CreateTableImpl::MySQL(mut d) => {
+            DBImpl::MySQL => {
                 let mut s = format!(
                     "CREATE TABLE{} `{}` (",
-                    if d.if_not_exists {
+                    if self.if_not_exists {
                         " IF NOT EXISTS"
                     } else {
                         ""
                     },
-                    d.name
+                    self.name
                 );
 
-                let columns_len = d.columns.len() - 1;
-                for (idx, mut x) in d.columns.into_iter().enumerate() {
+                let columns_len = self.columns.len() - 1;
+                for (idx, mut x) in self.columns.into_iter().enumerate() {
                     #[cfg(any(feature = "postgres", feature = "sqlite"))]
                     if let CreateColumnImpl::MySQL(ref mut cci) = x {
-                        cci.statements = Some(&mut d.statements);
+                        cci.statements = Some(&mut self.statements);
                     }
                     #[cfg(not(any(feature = "postgres", feature = "sqlite")))]
                     {
                         let CreateColumnImpl::MySQL(ref mut cci) = x;
-                        cci.statements = Some(&mut d.statements);
+                        cci.statements = Some(&mut self.statements);
                     }
 
                     x.build(&mut s)?;
@@ -162,35 +104,35 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
 
                 write!(s, "); ").unwrap();
 
-                let mut statements = vec![(s, d.lookup)];
-                statements.extend(d.statements);
+                let mut statements = vec![(s, self.lookup)];
+                statements.extend(self.statements);
 
                 Ok(statements)
             }
             #[cfg(feature = "postgres")]
-            CreateTableImpl::Postgres(mut d) => {
+            DBImpl::Postgres => {
                 let mut s = format!(
                     "CREATE TABLE{} \"{}\" (",
-                    if d.if_not_exists {
+                    if self.if_not_exists {
                         " IF NOT EXISTS"
                     } else {
                         ""
                     },
-                    d.name
+                    self.name
                 );
 
-                let columns_len = d.columns.len() - 1;
-                for (idx, mut x) in d.columns.into_iter().enumerate() {
+                let columns_len = self.columns.len() - 1;
+                for (idx, mut x) in self.columns.into_iter().enumerate() {
                     #[cfg(any(feature = "sqlite", feature = "mysql"))]
                     if let CreateColumnImpl::Postgres(ref mut cci) = x {
-                        cci.pre_statements = Some(&mut d.pre_statements);
-                        cci.statements = Some(&mut d.statements);
+                        cci.pre_statements = Some(&mut self.pre_statements);
+                        cci.statements = Some(&mut self.statements);
                     }
                     #[cfg(not(any(feature = "sqlite", feature = "mysql")))]
                     {
                         let CreateColumnImpl::Postgres(ref mut cci) = x;
-                        cci.pre_statements = Some(&mut d.pre_statements);
-                        cci.statements = Some(&mut d.statements);
+                        cci.pre_statements = Some(&mut self.pre_statements);
+                        cci.statements = Some(&mut self.statements);
                     }
 
                     x.build(&mut s)?;
@@ -202,9 +144,9 @@ impl<'until_build, 'post_build> CreateTable<'until_build, 'post_build>
 
                 write!(s, "); ").unwrap();
 
-                let mut statements = d.pre_statements;
-                statements.push((s, d.lookup));
-                statements.extend(d.statements);
+                let mut statements = self.pre_statements;
+                statements.push((s, self.lookup));
+                statements.extend(self.statements);
 
                 Ok(statements)
             }

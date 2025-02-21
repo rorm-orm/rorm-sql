@@ -60,8 +60,8 @@ use crate::create_column::CreateColumnPostgresData;
 #[cfg(feature = "sqlite")]
 use crate::create_column::CreateColumnSQLiteData;
 use crate::create_column::{CreateColumnImpl, SQLAnnotation};
-use crate::create_index::{CreateIndex, CreateIndexData, CreateIndexImpl};
-use crate::create_table::{CreateTable, CreateTableData, CreateTableImpl};
+use crate::create_index::CreateIndexBuilder;
+use crate::create_table::CreateTableBuilder;
 use crate::create_trigger::{
     SQLCreateTrigger, SQLCreateTriggerOperation, SQLCreateTriggerPointInTime,
 };
@@ -93,35 +93,22 @@ pub enum DBImpl {
 }
 
 impl DBImpl {
-    /**
-    The entry point to create a table.
-
-    **Parameter**:
-    - `name`: Name of the table
-    */
+    /// The entry point to create a table.
+    ///
+    /// **Parameter**:
+    /// - `name`: Name of the table
     pub fn create_table<'until_build, 'post_build>(
         &self,
         name: &'until_build str,
-    ) -> impl CreateTable<'until_build, 'post_build>
-    where
-        'post_build: 'until_build,
-    {
-        let d = CreateTableData {
+    ) -> CreateTableBuilder<'until_build, 'post_build> {
+        CreateTableBuilder {
             name,
             columns: vec![],
             if_not_exists: false,
             lookup: vec![],
             pre_statements: vec![],
             statements: vec![],
-        };
-
-        match self {
-            #[cfg(feature = "sqlite")]
-            DBImpl::SQLite => CreateTableImpl::SQLite(d),
-            #[cfg(feature = "mysql")]
-            DBImpl::MySQL => CreateTableImpl::MySQL(d),
-            #[cfg(feature = "postgres")]
-            DBImpl::Postgres => CreateTableImpl::Postgres(d),
+            dialect: *self,
         }
     }
 
@@ -152,34 +139,24 @@ impl DBImpl {
         }
     }
 
-    /**
-    The entry point to create an index.
-
-    **Parameter**:
-    - `name`: Name of the index.
-    - `table_name`: Table to create the index on.
-    */
+    /// The entry point to create an index.
+    ///
+    /// **Parameter**:
+    /// - `name`: Name of the index.
+    /// - `table_name`: Table to create the index on.
     pub fn create_index<'until_build>(
         &self,
         name: &'until_build str,
         table_name: &'until_build str,
-    ) -> impl CreateIndex<'until_build> {
-        let d = CreateIndexData {
+    ) -> CreateIndexBuilder<'until_build> {
+        CreateIndexBuilder {
             name,
             table_name,
             unique: false,
             if_not_exists: false,
             columns: vec![],
             condition: None,
-        };
-
-        match self {
-            #[cfg(feature = "sqlite")]
-            DBImpl::SQLite => CreateIndexImpl::Sqlite(d),
-            #[cfg(feature = "mysql")]
-            DBImpl::MySQL => CreateIndexImpl::MySQL(d),
-            #[cfg(feature = "postgres")]
-            DBImpl::Postgres => CreateIndexImpl::Postgres(d),
+            dialect: *self,
         }
     }
 
