@@ -44,15 +44,15 @@ pub mod update;
 /// Implementation of supported datatypes
 pub mod value;
 
+pub mod cows;
 mod db_specific;
-
-use std::borrow::Cow;
 
 use rorm_declaration::imr::{Annotation, DbType};
 
 use crate::aggregation::SelectAggregator;
 use crate::alter_table::{AlterTable, AlterTableData, AlterTableImpl, AlterTableOperation};
 use crate::conditional::Condition;
+use crate::cows::RefCow;
 #[cfg(feature = "postgres")]
 use crate::create_column::CreateColumnPostgresData;
 #[cfg(feature = "sqlite")]
@@ -417,7 +417,7 @@ impl DBImpl {
         join_type: JoinType,
         table_name: &'until_build str,
         join_alias: &'until_build str,
-        join_condition: Cow<'until_build, Condition<'post_query>>,
+        join_condition: RefCow<'until_build, Condition<'post_query>>,
     ) -> JoinTableImpl<'until_build, 'post_query> {
         let d = JoinTableData {
             join_type,

@@ -333,7 +333,7 @@ impl<'a> BuildCondition<'a> for Condition<'a> {
                 Value::Null(NullType::Choice) => write!(writer, "NULL"),
 
                 _ => {
-                    lookup.push(*value);
+                    lookup.push(value.clone());
                     match dialect {
                         #[cfg(feature = "sqlite")]
                         DBImpl::SQLite => {

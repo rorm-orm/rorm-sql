@@ -198,7 +198,7 @@ impl<'post_build> Insert<'post_build> for InsertImpl<'_, 'post_build> {
                             Value::Choice(c) => write!(s, "{}", postgres::fmt(c)).unwrap(),
                             Value::Null(NullType::Choice) => write!(s, "NULL").unwrap(),
                             _ => {
-                                d.lookup.push(*y);
+                                d.lookup.push(y.clone());
                                 write!(s, "${}", d.lookup.len()).unwrap();
                             }
                         }

@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use std::fmt::{Display, Formatter, Write};
 
 use crate::conditional::{BuildCondition, Condition};
+use crate::cows::RefCow;
 use crate::value::Value;
 use crate::DBImpl;
 
@@ -79,7 +79,16 @@ pub struct JoinTableData<'until_build, 'post_query> {
     /// Alias for the join table
     pub join_alias: &'until_build str,
     /// Condition to apply the join on
-    pub join_condition: Cow<'until_build, Condition<'post_query>>,
+    pub join_condition: RefCow<'until_build, Condition<'post_query>>,
+}
+
+/// [`JoinTableData`] should not be invariant over `'post_query`
+#[expect(unused)]
+fn test_variance<'a, 'b, 'c>(x: JoinTableData<'c, 'a>) -> JoinTableData<'c, 'b>
+where
+    'a: 'b,
+{
+    x
 }
 
 /**

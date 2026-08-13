@@ -174,7 +174,7 @@ impl<'until_build, 'post_build> Update<'until_build, 'post_build>
                 let update_index = d.updates.len() - 1;
                 for (idx, (name, value)) in d.updates.into_iter().enumerate() {
                     if let Value::Choice(c) = value {
-                        write!(s, "\"{name}\" = {}", postgres::fmt(c)).unwrap();
+                        write!(s, "\"{name}\" = {}", postgres::fmt(&c)).unwrap();
                     } else if let Value::Null(NullType::Choice) = value {
                         write!(s, "\"{name}\" = NULL").unwrap();
                     } else {
